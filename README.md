@@ -2,7 +2,7 @@
 
 #### CPU初步架构图：
 
-![638ab07256c710c87647b9e7305b3b2](D:\a_homework_of_c++\2-1_semester\RISCV-CPU-2022\README.assets\638ab07256c710c87647b9e7305b3b2.jpg)
+![638ab07256c710c87647b9e7305b3b2.jpg](https://github.com/lillian039/RISCV-CPU-2022/blob/main/README.assets/638ab07256c710c87647b9e7305b3b2.jpg?raw=true)
 
 #### 所需模块
 
