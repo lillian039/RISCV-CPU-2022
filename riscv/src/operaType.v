@@ -37,3 +37,5 @@
 `define    AND   3'b111;
 `define    LOAD   3'b0000011;
 `define    STORE   3'b0100011
+`define    TRUE 1'b1
+`define    FALSE 1'b0
