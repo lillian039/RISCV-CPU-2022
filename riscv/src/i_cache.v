@@ -4,7 +4,7 @@ module i_cache#(
 (
   input     wire                   clk_in,      // system clock
   input     wire                   rst_in,	    // reset signal
-  input     wire				   rdy_in,		// ready signal, pause cpu when low
+  input     wire				           rdy_in,		// ready signal, pause cpu when low
   input     wire                   get_addr,    //whether isq is full to get 
   input     wire  [ADDR_WIDTH-1:0] a_in,        // memory address
   input     wire  [ 7:0]           d_in,        // data input

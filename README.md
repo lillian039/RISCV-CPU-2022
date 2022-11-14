@@ -27,7 +27,7 @@
 
 ### 图示 Instruction Fetch
 
-<img src="D:\a_homework_of_c++\2-1_semester\RISCV-CPU-2022\README.assets\997af3ed740d718f7f89832a35714ad.jpg" alt="997af3ed740d718f7f89832a35714ad" style="zoom:33%;" />
+<img src="https://github.com/lillian039/RISCV-CPU-2022/blob/main/README.assets/997af3ed740d718f7f89832a35714ad.jpg?raw=true" alt="997af3ed740d718f7f89832a35714ad.jpg" style="zoom:33%;" />
 
 ### 所需模块：
 
