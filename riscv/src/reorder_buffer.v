@@ -1,11 +1,11 @@
 module reorder_buffer(
-    input wire clk_in,// system clock signal
-    input wire rst_in,// reset signal
-    input wire rdy_in,// ready signal, pause cpu when low
-    input wire pc_now_in,
-    input wire [31:0] instruction_in,
-    output wire [31:0] instruction_out
-    output wire is_full_out
+    input   wire          clk_in,// system clock signal
+    input   wire          rst_in,// reset signal
+    input   wire          rdy_in,// ready signal, pause cpu when low
+    input   wire          pc_now_in,
+    input   wire  [31:0]  instruction_in,
+    output  wire  [31:0]  instruction_out
+    output  wire          is_full_out
 );
 //ROB size 暂定32
 
