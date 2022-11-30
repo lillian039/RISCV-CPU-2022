@@ -1,12 +1,11 @@
 module IF(
-    parameter ADDR_WIDTH = 17
     input   wire                        clk_in,         // system clock signal
     input   wire                        rst_in,         // reset signal
     input   wire                        rdy_in,         // ready signal, pause cpu when low
-    input   wire    [7:0]               instruction_ram,// instruction get in ram 位宽为8 要分三次传送
+    input   wire    [7:0]               instruction_ram,// instruction get in ram 位宽为8 要分四次传送
     input   wire                        memory_ready,   // get instruction from ram
     output  wire                        get_memory,     // icache_miss
-    output  wire    [ADDR_WIDTH-1:0]    pc_ram,         // get instruction in ram 
+    output  wire    [31:0]              pc_ram          // get instruction in ram 
 );
 
 reg     [31:0]      pc_reg;
@@ -40,7 +39,7 @@ i_cache icache(
     .rdy_in             (rdy_in),
     .get_addr           (pc_reg),
     .miss               (cache_miss),
-    .instruction        (instruction_fetch_new),
+    .instruction        (instruction_fetch_new)
 );
 
 
@@ -66,7 +65,7 @@ branch_target_buffer BTB(
     .result             (btb_jump_result),
     .judge_jump_pc_in   (btb_jump_des),
     .change_state_pc_in (btb_change_state_des),
-    .jump_out           (whether_jump_result),
+    .jump_out           (whether_jump_result)
 );
 
 always @(posedge clk_in) begin
