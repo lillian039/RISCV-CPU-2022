@@ -1,11 +1,13 @@
+`include "operaType.v"
 module IF(
     input   wire                        clk_in,         // system clock signal
     input   wire                        rst_in,         // reset signal
     input   wire                        rdy_in,         // ready signal, pause cpu when low
+    
     input   wire    [7:0]               instruction_ram,// instruction get in ram 位宽为8 要分四次传送
     input   wire                        memory_ready,   // get instruction from ram
     output  wire                        get_memory,     // icache_miss
-    output  wire    [31:0]              pc_ram          // get instruction in ram 
+    output  wire    [31:0]              instruction_out // get instruction in ram 
 );
 
 reg     [31:0]      pc_reg;
@@ -78,11 +80,11 @@ always @(posedge clk_in) begin
     end
 
     else begin 
-        if(cache_miss == TRUE)begin
-            instruction_ready=FALSE;
+        if(cache_miss == `TRUE)begin
+            instruction_ready = `FALSE;
         end
-        if (whether_jump == TRUE)begin
-            pc_reg=btb_jump_des;
+        if (whether_jump_result == `TRUE)begin
+            pc_reg = btb_jump_des;
         end
         else pc_reg <= pc_reg + 4;
     end

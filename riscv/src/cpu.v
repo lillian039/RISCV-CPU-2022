@@ -28,6 +28,21 @@ module cpu(
 // - 0x30004 read: read clocks passed since cpu starts (in dword, 4 bytes)
 // - 0x30004 write: indicates program stop (will output '\0' through uart tx)
 
+reg                 memory_ready ;
+reg                 icache_miss;
+reg     [31:0]      instruction_fetch;
+reg                 instruction_ready;
+
+IF instructionFetch(
+  .clk_in           (clk_in),
+  .rst_in           (rst_in),
+  .rdy_in           (rdy_in),
+  .instruction_ram  (mem_din),
+  .memory_ready     (memory_ready),
+  .get_memory       (icache_miss),
+  .instruction_out    
+);
+
 always @(posedge clk_in)
   begin
     if (rst_in)

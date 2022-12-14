@@ -1,13 +1,14 @@
-module i_cache#(
-)
+`include "operaType.v"
+
+module i_cache
 (
   input     wire                   clk_in,      // system clock
   input     wire                   rst_in,	    // reset signal
   input     wire				           rdy_in,		  // ready signal, pause cpu when low
   input     wire                   get_addr,    // whether isq is full to get 
   input     wire  [31:0]           pc_addr,     // memory address
-  output    wire                   miss         // whether hit
-  output    wire  [31:0]           instruction, // get new instruction
+  output    wire                   miss,         // whether hit
+  output    wire  [31:0]           instruction // get new instruction
 );
 parameter   ICACHESIZE=64;
 reg         hit_i_cache;
@@ -24,7 +25,7 @@ assign instruction = instruction_new;
 always @(posedge clk_in) begin
     if(rst_in)begin//清空icache
       for (i= 0; i<ICACHESIZE ; i=i+1)begin
-        empty[i]=TRUE;
+        empty[i] = `TRUE;
       end
 
     end
@@ -34,13 +35,13 @@ always @(posedge clk_in) begin
     end
 
     else begin 
-      whether_miss=FALSE;
+      whether_miss=`FALSE;
        for (i= 0; i<ICACHESIZE ; i=i+1)begin
-        if(empty[i]==TRUE)begin
+        if(empty[i] == `TRUE)begin
           if(get_addr == pc_in_cache[i])begin
-            whether_miss<=FALSE;
+            whether_miss<= `FALSE;
             instruction_new<=instructions_in_cache[i];
-            whether_miss=TRUE;
+            whether_miss= `TRUE;
           end
         end
        end
