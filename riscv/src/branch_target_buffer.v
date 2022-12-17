@@ -17,8 +17,7 @@ module branch_target_buffer(
     input   wire    [31:0]  imm,
 
     //pc reg
-    input   wire    [31:0]  pc_in,
-    output  reg     [31:0]  pc_out,
+    output  wire    [31:0]  pc_out,
 
     //ROB
     input   wire            rob_commit,
@@ -37,9 +36,12 @@ module branch_target_buffer(
     parameter           prime   = 337;
 
     reg         [1:0]   btb  [BTBSIZE-1:0];
+    reg         [31:0]  pc;
+
+    assign      pc_out = pc;
 
     integer             i;
-    wire                hash_idx_pc = (pc_in * prime) % BTBSIZE;
+    wire                hash_idx_pc = (pc * prime) % BTBSIZE;
     wire                hash_idx_rob = (rob_pc_commit * prime) % BTBSIZE;
 
     always @(posedge clk_in) begin
@@ -48,35 +50,42 @@ module branch_target_buffer(
             btb[i] <= `weaklyNotTaken;
         end
         end
+
         else if(!rdy_in)begin//低信号或没有需要判断的jump  pause
         end
+
         else begin
         if(fetch_new_instruction)begin
             if(op_in == `JAL)begin
-                pc_out <= pc_in + imm;
+                pc <= pc + imm;
             end
             else if(op_in == `JALR)begin
                 stop_fetching <= `TRUE;
-                pc_out <= rob_pc_result;
+                pc <= rob_pc_result;
             end
             else if(op_type == `BType)begin
-                if (btb[hash_idx_pc] == `weaklyNotTaken || btb[hash_idx_pc] == `stronglyNotTaken) pc_out <= pc_in + imm;
-                else pc_out <= pc_in;
+                if (btb[hash_idx_pc] == `weaklyNotTaken || btb[hash_idx_pc] == `stronglyNotTaken) pc <= pc + imm;
             end
         end
         if(rob_commit)begin
             if(op_in == `JALR)begin
                 stop_fetching <= `FALSE;
-                pc_out <= rob_result;
+                pc <= rob_pc_result;
                 roll_back <= `FALSE;
             end  
             else if(op_type == `BType)begin
                 if(btb[hash_idx_pc] == `weaklyNotTaken || btb[hash_idx_pc] == `stronglyNotTaken )begin
-                    if(rob_result == `TRUE) roll_back <= `TRUE;
+                    if(rob_result == `TRUE) begin
+                        roll_back <= `TRUE;
+                        pc <= rob_pc_result;
+                    end
                     else roll_back <= `FALSE;
                 end
                 else begin
-                    if(rob_result == `FALSE) roll_back <= `TRUE;
+                    if(rob_result == `FALSE) begin
+                        roll_back <= `TRUE;
+                        pc <= rob_pc_result;
+                    end
                     else roll_back <= `FALSE;
                 end
                 if(rob_result == `TRUE  && btb[hash_idx_rob] < 2'b11) btb[hash_idx_rob] <= btb[hash_idx_rob] + 1;

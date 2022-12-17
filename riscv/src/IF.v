@@ -1,95 +1,124 @@
 `include "operaType.v"
+//has inner ISQ BTB Decoder
+//connect with ROB RS LSB RAM
 module IF(
     input   wire                        clk_in,         // system clock signal
     input   wire                        rst_in,         // reset signal
     input   wire                        rdy_in,         // ready signal, pause cpu when low
     
-    input   wire    [7:0]               instruction_ram,// instruction get in ram 位宽为8 要分四次传送
-    input   wire                        memory_ready,   // get instruction from ram
-    output  wire                        get_memory,     // icache_miss
-    output  wire    [31:0]              instruction_out // get instruction in ram 
+    //rob broadcast
+    input   wire                        rob_commit,
+    input   wire    [31:0]              rob_pc_commit,
+    input   wire    [5:0]               rob_op_commit,
+    input   wire    [2:0]               rob_op_type,
+    input   wire    [31:0]              rob_result,
+    input   wire    [31:0]              rob_pc_result,
+
+    //rob issue
+    input   wire                        rob_is_full,
+    output  reg                         ins_to_rob,
+
+    //rs issue
+    input   wire                        rs_is_full,
+    output  reg                         ins_to_rs,
+
+    //lsb issue
+    input   wire                        lsb_is_full,
+    output  reg                         ins_to_lsb,
+
+    //memory_controller
+    input   wire                        is_idle,
+    input   wire                        finish_fetch,
+    input   wire    [31:0]              instruction_in,
+    output  wire    [31:0]              pc_out,
+    output  wire                        fetch_start,
+
+    //isq
+    output  wire    [31:0]              instruction_out, // get instruction in isq
+    output  wire    [31:0]              isq_pc_out,
+
+    //btb
+    output  wire                        roll_back_out
 );
+    wire    [31:0]      pc;
+    wire                isq_is_full;
 
-reg     [31:0]      pc_reg;
+    reg                 roll_back;
+    reg                 isq_hault;
 
-reg     [3:0]       memory_send_times;  //受位宽限制，要分4次送数据
-reg                 addr_send_times;    //受位宽限制，要分2次送地址
+    //decoder
+    reg     [31:0]      imm;
+    reg     [5:0]       op;
+    reg     [5:0]       rs1;
+    reg     [5:0]       rs2;
+    reg     [5:0]       rd;
+    reg     [2:0]       op_type;
 
-reg     [31:0]      instruction_fetch_new;
-reg                 cache_miss;
+    assign      fetch_start = !isq_is_full && !isq_hault;
+    assign      roll_back_out = roll_back;
 
+    //decode instruction from ram and then put in in isq
+    decoder isq_decoder(
+        .op_in                  (instruction_in),
 
-assign pc_ram = pc_reg;
-assign get_memory = cache_miss;
+        .imm_out                (imm),
+        .op_out                 (op),
+        .rs1                    (rs1),
+        .rs2                    (rs2),
+        .rd                     (rd),
+        .op_type                (op_type)
+    );
 
-wire    [31:0]      isq_instruction_out;
-wire                isq_is_full;
-wire                isq_is_sending;
-wire                rob_is_full;
-reg                 instruction_ready;
+    instruction_queue ISQ(
+        .clk_in                 (clk_in),
+        .rst_in                 (rst_in),
+        .rdy_in                 (rdy_in),
 
-wire                if_run_btb_jump;                //是否启动判断btb要不要jump
-wire                if_run_btb_judge_change_state;  //是否启动判断btb要不要change state
-wire                btb_jump_result;                //旧的 pc 的真实判断结果
-wire    [31:0]      btb_jump_des;                   //新pc预测要jump到哪
-wire    [31:0]      btb_change_state_des;           //旧pc的地址
-wire                whether_jump_result;            //预测pc是否要跳转
+        .roll_back              (roll_back),
 
-i_cache icache(
-    .clk_in             (clk_in),
-    .rst_in             (rst_in),
-    .rdy_in             (rdy_in),
-    .get_addr           (pc_reg),
-    .miss               (cache_miss),
-    .instruction        (instruction_fetch_new)
-);
+        .instruction_ready      (finish_fetch),
+        .instruction_in         (instruction_in),
+        .pc_in                  (pc),
 
+        .rob_is_full            (rob_is_full),
+        .ins_to_rob             (ins_to_rob),
 
+        .rs_is_full             (rs_is_full),
+        .ins_to_rs              (ins_to_rs),
 
-instruction_queue ISQ(
-    .clk_in             (clk_in),
-    .rst_in             (rst_in),
-    .rdy_in             (rdy_in),
-    .instruction_ready  (instruction_ready),
-    .instruction_in     (instruction_fetch_new),
-    .rob_is_full        (rob_is_full),
-    .instruction_out    (isq_instruction_out),
-    .is_full            (isq_is_full),
-    .is_sending         (isq_is_sending)
-);
+        .lsb_is_full            (lsb_is_full),
+        .ins_to_lsb             (ins_to_lsb),
 
-branch_target_buffer BTB(
-    .clk_in             (clk_in),
-    .rst_in             (rst_in),
-    .rdy_in             (rdy_in),
-    .judge_btb          (if_run_btb_jump),
-    .change_state       (if_run_btb_judge_change_state),
-    .result             (btb_jump_result),
-    .judge_jump_pc_in   (btb_jump_des),
-    .change_state_pc_in (btb_change_state_des),
-    .jump_out           (whether_jump_result)
-);
+        .instruction_out        (instruction_out),
+        .ins_pc_out             (isq_pc_out),
 
-always @(posedge clk_in) begin
-    if(rst_in)begin//清空
+        .op_type_in             (op_type),
+        .is_full                (isq_is_full)       
+    );
 
-    end
+    branch_target_buffer BTB(
+        .clk_in                 (clk_in),
+        .rst_in                 (rst_in),
+        .rdy_in                 (rdy_in),
 
-    else if(!rdy_in)begin//低信号 pause
+        .fetch_new_instruction  (finish_fetch),
 
-    end
+        .op_type                (op_type),
+        .op_in                  (op),
+        .imm                    (imm),
 
-    else begin 
-        if(cache_miss == `TRUE)begin
-            instruction_ready = `FALSE;
-        end
-        if (whether_jump_result == `TRUE)begin
-            pc_reg = btb_jump_des;
-        end
-        else pc_reg <= pc_reg + 4;
-    end
+        .pc_out                 (pc),
 
-end
+        .rob_commit             (rob_commit),
+        .rob_pc_commit          (rob_pc_commit),
+        .rob_op_commit          (rob_op_commit),
+        .rob_op_type            (rob_op_type),
+        .rob_result             (rob_result),
+        .rob_pc_result          (rob_pc_result),
+        .roll_back              (roll_back),
+
+        .stop_fetching          (isq_hault)
+    );
 
 
 endmodule

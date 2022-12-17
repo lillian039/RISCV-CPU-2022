@@ -4,6 +4,9 @@ module instruction_queue(
     input   wire            rst_in,             // reset signal
     input   wire            rdy_in,             // ready signal, pause cpu when low
 
+    //BTB
+    input   wire            roll_back,
+
     input   wire            instruction_ready,  //whether icache/mem get the instruction
     input   wire    [31:0]  instruction_in,     // 32 width instruction
     input   wire    [31:0]  pc_in,
@@ -42,7 +45,7 @@ module instruction_queue(
     assign ins_pc_out = pc_isq[isq_head];
 
     always @(posedge clk_in) begin
-        if(rst_in)begin//清空isq
+        if(rst_in || roll_back)begin//清空isq
             isq_head    <= 0;
             isq_rear    <= 0;
             ins_to_lsb  <= 0;
