@@ -9,9 +9,6 @@ module reorder_buffer(
     output  wire                cur_entry,
     input   wire                roll_back,
 
-    //LSB
-    input   wire                is_storing,
-
     //ISQ
     input   wire                get_instruction,
     input   wire    [31:0]      isq_ins_in,
@@ -35,10 +32,17 @@ module reorder_buffer(
     input   wire    [31:0]          rs_pc_in,
     input   wire    [`ENTRY_RANGE]  rs_entry,
 
-    //ls broadcast
+    //lsb broadcast
     input   wire                    lsb_broadcast,
     input   wire    [31:0]          lsb_result,
-    input   wire    [`ENTRY_RANGE]  lsb_entry
+    input   wire    [`ENTRY_RANGE]  lsb_entry,
+
+    output  wire    [4:0]           rob_head_out,
+    output  wire    [4:0]           rob_rear_out,
+
+    input   wire                    lsb_store_addressed,
+    input   wire    [`ENTRY_RANGE]  lsb_store_entry
+
 
 );
     //ROB size
@@ -57,8 +61,13 @@ module reorder_buffer(
     reg   [4:0]     rob_head;                           //指向rob的头
     reg   [4:0]     rob_rear;                           //指向rob的尾
 
+    reg             is_storing;
+
     assign rob_is_full = rob_head == rob_rear + 1;
     assign cur_entry = rob_rear;
+    
+    assign rob_head_out = rob_head;
+    assign rob_rear_out = rob_rear;
 
 
     integer  i;
@@ -99,8 +108,11 @@ module reorder_buffer(
                 rob_result_out <= rob_result[rob_head];
                 rob_ready[rob_head] <= `FALSE;
                 rob_head <= rob_head + 1;
+                if(rob_op_type[rob_head] == `SType) is_storing <= `TRUE;
             end
-            else rob_commit <= `FALSE;
+            else begin
+              rob_commit <= `FALSE;
+            end
 
             //broadcast
             if(lsb_broadcast)begin
@@ -108,10 +120,19 @@ module reorder_buffer(
                   if(rob_entry[i] == lsb_entry) begin
                     rob_ready[i] <= `TRUE;
                     rob_result[i] <= lsb_result;
+                    is_storing <= `FALSE;
                   end
               end
             end
-            
+
+            if(lsb_store_addressed)begin
+              for(i = rob_head; i != rob_rear; i = i + 1)begin
+                  if(rob_entry[i] == lsb_store_entry) begin
+                    rob_ready[i] <= `TRUE;
+                  end
+              end
+            end
+
             if(rs_broadcast)begin
               for(i = rob_head; i != rob_rear; i = i + 1)begin
                   if(rob_entry[i] == rs_entry) begin

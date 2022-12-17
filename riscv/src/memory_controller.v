@@ -16,14 +16,13 @@ module memory_controller
     output  reg    [7:0]            ram_store_data,
     input   wire   [7:0]            ram_load_data,
     output  wire   [ADDR_WIDTH-1:0] addr_in,
-    output  wire                    chip_enable,
 
     //lsb
     input   wire                    lsb_load,
     input   wire    [`ADDR_RANGE]   load_address,
     input   wire    [5:0]           op_type_load,
-    output  wire                    finished_load,
     output  wire    [31:0]          get_load_data,
+    output  wire                    finished_load,
 
     input   wire                    lsb_store,
     input   wire    [`ADDR_RANGE]   store_address,
@@ -64,7 +63,6 @@ module memory_controller
 
     assign  is_idle = !is_loading && !is_storing && !is_fetching;
     assign  rw_select = is_storing ?  0 : 1; //1 read 0 write
-    assign  chip_enable = is_storing || is_loading || is_fetching;
     assign  addr_in = addr_record;
 
     assign  finished_load = load_finish;

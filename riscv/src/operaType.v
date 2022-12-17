@@ -38,13 +38,13 @@
 `define    AND      6'd36 
 `define    NOP      6'd37       //no operation(R[0]=R[0])
 
-//load & store buffer
-`define    LOAD     7'b0000011 
-`define    STORE    7'b0100011
-
 //boolen
 `define    TRUE     1'b1
 `define    FALSE    1'b0
+
+//load & store buffer
+`define    LOAD     7'b0000011 
+`define    STORE    7'b0100011
 
 // 8 state
 `define     Empty               3'b000 
@@ -69,5 +69,7 @@
 `define     ENTRY_RANGE         5:0
 `define     ENTRY_NULL          6'd32
 `define     NULL                6'd32
+
+`define     ROB_SIZE            6'd32
 
 `define     ADDR_RANGE          16:0 

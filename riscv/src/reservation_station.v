@@ -10,7 +10,6 @@ module reservation_station
     input   wire                    rdy_in,// ready signal, pause cpu when low
      
     input   wire    [31:0]          pc_now_in,
-    input   wire                    is_storing,
     input   wire                    get_instruction,
     input   wire    [31:0]          instruction_in,
     input   wire    [31:0]          entry_in,
@@ -49,7 +48,12 @@ module reservation_station
     input   wire                    alu_broadcast,
     input   wire    [`ENTRY_RANGE]  alu_entry,
     input   wire    [31:0]          alu_value,
-    input   wire    [31:0]          alu_pc_out
+    input   wire    [31:0]          alu_pc_out,
+
+    //broadcast
+    output  wire                    rs_broadcast,
+    output  wire    [`ENTRY_RANGE]  rs_entry,
+    output  wire    [31:0]          rs_result          
 
 );
 
@@ -65,11 +69,14 @@ module reservation_station
     reg     [31:0]                  rs_pc   [RS_SIZE-1:0];
     reg     [6:0]                   op_type [RS_SIZE-1:0];
 
-    reg     [`ENTRY_RANGE]          cur_rs_emtpty;
+    reg     [`ENTRY_RANGE]          cur_rs_empty;
     reg     [`ENTRY_RANGE]          cur_rs_ready;
 
-    assign is_full_out = cur_rs_emtpty == `ENTRY_NULL;
+    assign  is_full_out  = cur_rs_empty == `ENTRY_NULL;
 
+    assign  rs_broadcast = alu_broadcast;
+    assign  rs_entry     = alu_entry;
+    assign  rs_result    = alu_value; 
 
     integer i;
 
@@ -88,15 +95,15 @@ module reservation_station
         //issue part
         begin 
         if (get_instruction && op_type_in != `SType && op_type_in != `ILoadType)begin
-            entry   [cur_rs_emtpty] <= entry_in;
-            op      [cur_rs_emtpty] <= instruction_in;
-            rs_pc   [cur_rs_emtpty] <= pc_now_in;
-            Qj      [cur_rs_emtpty] <= Qj_in;
-            Qk      [cur_rs_emtpty] <= Qk_in;
-            A       [cur_rs_emtpty] <= imm_in;
-            Vj      [cur_rs_emtpty] <= Vj_in;
-            Vk      [cur_rs_emtpty] <= Vk_in;
-            state   [cur_rs_emtpty] <= `Waiting;
+            entry   [cur_rs_empty] <= entry_in;
+            op      [cur_rs_empty] <= instruction_in;
+            rs_pc   [cur_rs_empty] <= pc_now_in;
+            Qj      [cur_rs_empty] <= Qj_in;
+            Qk      [cur_rs_empty] <= Qk_in;
+            A       [cur_rs_empty] <= imm_in;
+            Vj      [cur_rs_empty] <= Vj_in;
+            Vk      [cur_rs_empty] <= Vk_in;
+            state   [cur_rs_empty] <= `Waiting;
         end
 
         //update ready
@@ -121,6 +128,21 @@ module reservation_station
                 end
         end
 
+        if(lsb_broadcast) begin
+            for(i = 0; i < RS_SIZE; i = i + 1)begin
+                if (state[i] == `Waiting)begin
+                    if (Qj[i] == lsb_entry) begin
+                        Qj[i] <= `ENTRY_NULL;
+                        Vj[i] <= lsb_value;
+                    end
+                    if (Qk[i] == lsb_entry) begin
+                        Qk[i] <= `ENTRY_NULL;
+                        Vk[i] <= lsb_value;
+                    end
+                end
+                end
+        end
+
         //then comes the execute part
        if (cur_rs_ready != `ENTRY_NULL)begin // find waiting
             rs_op_out   <= op       [cur_rs_ready];
@@ -136,14 +158,18 @@ module reservation_station
     end
 
     always @(*)begin
+        for(i = 0; i < RS_SIZE; i = i + 1)begin
+            if(state[i] == `Waiting && Qj[i] == `ENTRY_NULL && Qk[i] == `ENTRY_NULL)
+                state[i] = `Ready;
+        end
         i = 0;
         while( i < 6'd32 && state[i] != `Empty )begin
-            i=i+1;
+            i = i + 1;
         end
-        cur_rs_emtpty = i;
+        cur_rs_empty = i;
         i = 0;
         while( i < 6'd32 && state[i] != `Ready )begin
-            i=i+1;
+            i = i + 1;
         end
         cur_rs_ready = i;
     end
