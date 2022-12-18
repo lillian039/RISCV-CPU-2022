@@ -2,6 +2,7 @@
 //control data flow among LSBuffer InstructionQueue any reset signal
 //if branch wrong, than clear rob, also need to finish the operation before
 //优先级：暂定 store > load > fetch
+//has inner i-cache
 module memory_controller
 #(
     parameter ADDR_WIDTH = 17
@@ -61,6 +62,18 @@ module memory_controller
 
     reg     [31:0]          fetch_instruct;
 
+    //inner i-cache
+    wire                    icache_hit;
+    reg     [16:0]          icache_tags     [`ICACHE_RANGE];
+    reg                     icache_valid    [`ICACHE_RANGE];
+    reg     [31:0]          icache_inst     [`ICACHE_RANGE];
+    wire    [31:0]          icache_hit_inst;
+    
+    //index pc[7:0]
+    assign  icache_hit = icache_valid[pc[7:0]] && icache_tags[pc[7:0]] == pc[16:0];
+    assign  icache_hit_inst = icache_inst[pc[7:0]];
+
+
     assign  is_idle = !is_loading && !is_storing && !is_fetching;
     assign  rw_select = is_storing ?  0 : 1; //1 read 0 write
     assign  addr_in = addr_record;
@@ -118,6 +131,11 @@ module memory_controller
             end
             if(fetch_finish == `TRUE)begin
                 fetch_finish <= `FALSE;
+                if(!icache_hit)begin
+                    icache_valid [pc[7:0]] <= `TRUE;
+                    icache_inst  [pc[7:0]] <= fetch_instruct;
+                    icache_tags  [pc[7:0]] <= pc[16:0];
+                end
             end
             if(is_loading == `TRUE)begin
                 if(load_op == `LW)begin
@@ -189,7 +207,7 @@ module memory_controller
                 end
             end
             
-            if(is_fetching)begin
+            if(is_fetching && icache_hit == `FALSE)begin
                 if(fetch_cnt == 3'b100)begin  end
                 else if(fetch_cnt == 3'b011) fetch_instruct[7:0] <= ram_load_data;
                 else if(fetch_cnt == 3'b010) fetch_instruct[15:8] <= ram_load_data;
@@ -201,6 +219,11 @@ module memory_controller
                 end
                 load_cnt <= load_cnt - 1; 
                 addr_record <= addr_record + 1;
+            end
+            else if(is_fetching && icache_hit == `TRUE)begin
+                fetch_instruct <= icache_hit_inst;
+                is_fetching    <= `FALSE;
+                fetch_finish   <= `TRUE;
             end
 
         end
