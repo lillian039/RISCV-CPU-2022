@@ -9,6 +9,9 @@ module reorder_buffer(
     output  wire                cur_entry,
     input   wire                roll_back,
 
+    //memory-controller
+    input   wire                finish_store,
+
     //ISQ
     input   wire                get_instruction,
     input   wire    [31:0]      isq_ins_in,
@@ -38,7 +41,6 @@ module reorder_buffer(
     input   wire    [`ENTRY_RANGE]  lsb_entry,
 
     output  wire    [4:0]           rob_head_out,
-    output  wire    [4:0]           rob_rear_out,
 
     input   wire                    lsb_store_addressed,
     input   wire    [`ENTRY_RANGE]  lsb_store_entry
@@ -113,6 +115,7 @@ module reorder_buffer(
             else begin
               rob_commit <= `FALSE;
             end
+            if(finish_store)is_storing <= `FALSE;
 
             //broadcast
             if(lsb_broadcast)begin
@@ -120,7 +123,6 @@ module reorder_buffer(
                   if(rob_entry[i] == lsb_entry) begin
                     rob_ready[i] <= `TRUE;
                     rob_result[i] <= lsb_result;
-                    is_storing <= `FALSE;
                   end
               end
             end

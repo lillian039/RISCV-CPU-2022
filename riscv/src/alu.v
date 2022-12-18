@@ -5,7 +5,6 @@ module alu(
     input   wire                    rdy_in,// ready signal, pause cpu when low
 
     input   wire                    new_calculate,
-    input   wire    [6:0]           opcode,
     input   wire    [31:0]          instruction,
     input   wire    [5:0]           op,   
     input   wire    [31:0]          vj,

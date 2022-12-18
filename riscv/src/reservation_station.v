@@ -31,14 +31,14 @@ module reservation_station
     output  wire                    is_full_out,
          
     //to alu     
-    output  reg     [6:0]           opcode_out,
-    output  reg     [31:0]          rs_op_out,   
+    output  reg                     new_calculate,
+    output  reg     [5:0]           rs_op_out,
+    output  reg     [31:0]          rs_instruct_out,   
     output  reg     [31:0]          rs_vj_out,
     output  reg     [31:0]          rs_vk_out,
-    output  reg     [31:0]          rs_store_pc_out,
     output  reg     [31:0]          rs_imm_out,
     output  reg     [31:0]          rs_pc_out,
-    output  reg     [`ENTRY_RANGE]  rs_des_out,
+    output  reg     [`ENTRY_RANGE]  rs_entry_out,
  
     //CDB 
     input   wire                    lsb_broadcast,
@@ -53,7 +53,8 @@ module reservation_station
     //broadcast
     output  wire                    rs_broadcast,
     output  wire    [`ENTRY_RANGE]  rs_entry,
-    output  wire    [31:0]          rs_result          
+    output  wire    [31:0]          rs_result,
+    output  wire    [31:0]          rs_pc_result          
 
 );
 
@@ -64,10 +65,10 @@ module reservation_station
     reg     [`ENTRY_RANGE]          Qj      [RS_SIZE-1:0];  
     reg     [`ENTRY_RANGE]          Qk      [RS_SIZE-1:0];
     reg     [31:0]                  A       [RS_SIZE-1:0];  //imm 立即数
-    reg     [31:0]                  op      [RS_SIZE-1:0];
+    reg     [31:0]                  inst    [RS_SIZE-1:0];
     reg     [31:0]                  entry   [RS_SIZE-1:0];
     reg     [31:0]                  rs_pc   [RS_SIZE-1:0];
-    reg     [6:0]                   op_type [RS_SIZE-1:0];
+    reg     [5:0]                   op      [RS_SIZE-1:0];
 
     reg     [`ENTRY_RANGE]          cur_rs_empty;
     reg     [`ENTRY_RANGE]          cur_rs_ready;
@@ -77,6 +78,7 @@ module reservation_station
     assign  rs_broadcast = alu_broadcast;
     assign  rs_entry     = alu_entry;
     assign  rs_result    = alu_value; 
+    assign  rs_pc_result   = alu_pc_out;
 
     integer i;
 
@@ -94,9 +96,9 @@ module reservation_station
         else 
         //issue part
         begin 
-        if (get_instruction && op_type_in != `SType && op_type_in != `ILoadType)begin
+        if (get_instruction)begin
             entry   [cur_rs_empty] <= entry_in;
-            op      [cur_rs_empty] <= instruction_in;
+            op      [cur_rs_empty] <= op_type_in;
             rs_pc   [cur_rs_empty] <= pc_now_in;
             Qj      [cur_rs_empty] <= Qj_in;
             Qk      [cur_rs_empty] <= Qk_in;
@@ -104,6 +106,7 @@ module reservation_station
             Vj      [cur_rs_empty] <= Vj_in;
             Vk      [cur_rs_empty] <= Vk_in;
             state   [cur_rs_empty] <= `Waiting;
+            inst    [cur_rs_empty] <= instruction_in;
         end
 
         //update ready
@@ -150,8 +153,11 @@ module reservation_station
             rs_vk_out   <= Vk       [cur_rs_ready];
             rs_pc_out   <= rs_pc    [cur_rs_ready];
             rs_imm_out  <= A        [cur_rs_ready];
+            rs_instruct_out <= inst [cur_rs_ready];
             state[cur_rs_ready] <= `Empty;
+            new_calculate   <= `TRUE;
         end
+        else new_calculate <= `FALSE;
         //todo broadcast
         end
 

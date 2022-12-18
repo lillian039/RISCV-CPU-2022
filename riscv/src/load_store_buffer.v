@@ -46,7 +46,7 @@ module load_store_buffer
     output  reg     [`ENTRY_RANGE]  load_entry_out,
 
     output  reg                     lsb_store_broadcast,
-    output  wire    [`ENTRY_RANGE]  store_entry_out,
+    output  reg     [`ENTRY_RANGE]  store_entry_out,
 
     //memory_controller
     input   wire                    finish_store,
@@ -183,15 +183,16 @@ module load_store_buffer
             //excute step 1: work out address
             if(cur_lsb_ready != `ENTRY_NULL)begin
                 if(op_type[cur_lsb_ready] == `ILoadType)begin
-                     state[cur_lsb_ready]  <= `Addressed;
-                     lsb_store_broadcast   <= `FALSE;
+                     state[cur_lsb_ready]   <= `Addressed;
+                     lsb_store_broadcast    <= `FALSE;
                      address[cur_lsb_ready] <= Vj[cur_lsb_ready] + A[cur_lsb_ready];
                 end
                 else begin
-                    state[cur_lsb_ready]  <= `WaitingStore;
-                    lsb_store_broadcast   <= `TRUE;
-                    address[cur_lsb_ready] <= Vj[cur_lsb_ready] + A[cur_lsb_ready];
-                    result [cur_lsb_ready] <= Vk[cur_lsb_ready];
+                    state[cur_lsb_ready]    <= `WaitingStore;
+                    lsb_store_broadcast     <= `TRUE;
+                    store_entry_out         <= entry[cur_lsb_ready];
+                    address[cur_lsb_ready]  <= Vj[cur_lsb_ready] + A[cur_lsb_ready];
+                    result [cur_lsb_ready]  <= Vk[cur_lsb_ready];
                 end
 
             end
@@ -234,31 +235,21 @@ module load_store_buffer
         end
 
         i = 0;
-        while( i < 6'd32 && state[i] != `Empty )begin
-            i = i + 1;
-        end
+        while( i < 6'd32 && state[i] != `Empty ) i = i + 1;
         cur_lsb_empty = i;
 
         i = 0;
-        while( i < 6'd32 && state[i] != `Storing )begin
-            i = i + 1;
-        end
+        while( i < 6'd32 && state[i] != `Storing )i = i + 1;
         cur_storing = i;
 
-        while( i < 6'd32 && state[i] != `Loading )begin
-            i = i + 1;
-        end
+        while( i < 6'd32 && state[i] != `Loading )i = i + 1;
         cur_loading = i;
 
-        while( i < 6'd32 && state[i] != `Addressed )begin
-            i = i + 1;
-        end
+        while( i < 6'd32 && state[i] != `Addressed )i = i + 1;
         cur_addressed = i;
 
         i = 0;
-        while( i < 6'd32 && state[i] != `Ready )begin
-            i = i + 1;
-        end
+        while( i < 6'd32 && state[i] != `Ready )i = i + 1;
         cur_lsb_ready = i;
     end
 

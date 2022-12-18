@@ -43,16 +43,16 @@ module IF(
     wire    [31:0]      pc;
     wire                isq_is_full;
 
-    reg                 roll_back;
-    reg                 isq_hault;
+    wire                roll_back;
+    wire                isq_hault;
 
     //decoder
-    reg     [31:0]      imm;
-    reg     [5:0]       op;
-    reg     [5:0]       rs1;
-    reg     [5:0]       rs2;
-    reg     [5:0]       rd;
-    reg     [2:0]       op_type;
+    wire     [31:0]      imm;
+    wire     [5:0]       op;
+    wire     [5:0]       rs1;
+    wire     [5:0]       rs2;
+    wire     [5:0]       rd;
+    wire     [2:0]       op_type;
 
     assign      fetch_start = !isq_is_full && !isq_hault;
     assign      roll_back_out = roll_back;
