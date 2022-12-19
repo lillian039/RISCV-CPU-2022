@@ -7,7 +7,7 @@ sim_testcase = $(prefix)/testcase/sim
 fpga_testcase = $(prefix)/testcase/fpga
 
 sim = $(prefix)/sim
-riscv_toolchain = /opt/riscv
+riscv_toolchain = /home/lillian/homework/riscv-toolchain
 riscv_bin = $(riscv_toolchain)/bin
 sys = $(prefix)/sys
 
