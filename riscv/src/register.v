@@ -50,7 +50,9 @@ module register
     always @ (posedge clk) begin
         if(rst_in == `TRUE || roll_back == `TRUE)begin//清空
             for(i = 0; i < REG_SIZE; i = i + 1)begin
-                busy[i] <= `FALSE;
+                busy[i]     <= `FALSE;
+                reorder[i]  <= 0;
+                value[i]    <= 0;
             end
         end
         else if(!rdy_in)begin//低信号 pause

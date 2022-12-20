@@ -65,33 +65,24 @@ module load_store_buffer
 
     parameter LSB_SIZE=32;
 
-    reg [3:0]               state       [LSB_SIZE-1:0];
-    reg [31:0]              Vj          [LSB_SIZE-1:0];
-    reg [31:0]              Vk          [LSB_SIZE-1:0];  
-    reg [`ENTRY_RANGE]      Qj          [LSB_SIZE-1:0];     //0 empty
-    reg [`ENTRY_RANGE]      Qk          [LSB_SIZE-1:0];
-    reg [31:0]              A           [LSB_SIZE-1:0];
-    reg [2:0]               op_type     [LSB_SIZE-1:0];
-    reg [6:0]               op          [LSB_SIZE-1:0];
-    reg [`ENTRY_RANGE]      entry       [LSB_SIZE-1:0];
-    reg [31:0]              result      [LSB_SIZE-1:0];
-    reg [31:0]              address     [LSB_SIZE-1:0];
+    reg     [3:0]               state               [LSB_SIZE-1:0];
+    reg     [31:0]              Vj                  [LSB_SIZE-1:0];
+    reg     [31:0]              Vk                  [LSB_SIZE-1:0];  
+    reg     [`ENTRY_RANGE]      Qj                  [LSB_SIZE-1:0];     //0 empty
+    reg     [`ENTRY_RANGE]      Qk                  [LSB_SIZE-1:0];
+    reg     [31:0]              A                   [LSB_SIZE-1:0];
+    reg     [2:0]               op_type             [LSB_SIZE-1:0];
+    reg     [6:0]               op                  [LSB_SIZE-1:0];
+    reg     [`ENTRY_RANGE]      entry               [LSB_SIZE-1:0];
+        
+    reg     [4:0]               lsb_head;
+    reg     [4:0]               lsb_rear;
 
-    reg [`ENTRY_RANGE]      closest_pre_store   [LSB_SIZE-1:0];
 
-    reg     [`ENTRY_RANGE]          cur_lsb_empty;
-    reg     [`ENTRY_RANGE]          cur_lsb_ready;
-    reg     [`ENTRY_RANGE]          cur_storing;
-    reg     [`ENTRY_RANGE]          cur_loading;
-    reg     [`ENTRY_RANGE]          cur_addressed;
-
-    reg         execute_enable;  
-
-    reg         new_load;
+    assign  is_full_out     = lsb_head == lsb_rear + 1;
+    assign  cur_lsb_empty   = lsb_rear;
 
     integer i;
-    integer j;
-
 
     always @(posedge clk_in ) begin
         if(rst_in || roll_back)begin//清空
@@ -105,6 +96,10 @@ module load_store_buffer
         end
 
         else begin 
+            for(i = 0; i < LSB_SIZE; i = i + 1)begin
+                if(state[i] == `Waiting && Qj[i] == `ENTRY_NULL && Qk[i] == `ENTRY_NULL)
+                    state[i] <= `Ready;
+            end
             //issue
             if (get_instruction && (op_type_in == `SType || op_type_in == `ILoadType))begin
                 entry       [cur_lsb_empty] <= entry_in;
@@ -134,7 +129,7 @@ module load_store_buffer
                 end
             end
 
-             if(lsb_load_broadcast)begin
+            if(lsb_load_broadcast)begin
                 for(i = 0; i <= LSB_SIZE; i = i + 1)begin
                     if(state[i] == `Waiting)begin
                         if(Qj[i] == load_result)begin
@@ -152,125 +147,49 @@ module load_store_buffer
 
             if(rob_commit)begin
                 if(rob_op_type_commit == `SType)begin
-                    for(i = 0; i <= LSB_SIZE; i = i + 1)begin
-                        if(entry[i] == rob_entry_commit)begin
-                            state[i]      <= `Storing;
-                            cur_storing   <= i;
-                            lsb_store     <= `TRUE;
-                            store_address <= address[i];
-                            data_store    <= result [i];
-                            op_type_store <= op_type[i];
-                        end
-                    end
+                    state[lsb_head] <= `Storing;
+                    lsb_store       <= `TRUE;
+                    store_address   <= Vj[lsb_head] + A[lsb_head];
+                    data_store      <= Vk[lsb_head];
+                    op_type_store   <= op_type[lsb_head];
                 end
             end
 
             if(finish_store)begin
-                lsb_store          <= `FALSE;
-                state[cur_storing] <= `Empty;
-           //   cur_storing        <= `ENTRY_NULL;
+                lsb_store   <= `FALSE;
+                lsb_head    <= lsb_head + 1;
             end
-
-            if(finish_load)begin
+            else if(finish_load)begin
                 lsb_load           <= `FALSE;
-                state[cur_loading] <= `Empty;
-            //   cur_loading        <= `ENTRY_NULL;
                 lsb_load_broadcast <= `TRUE;
                 load_result        <= data_load;
-                load_entry_out     <= entry_in[cur_loading];
+                load_entry_out     <= entry_in[lsb_head];
+                lsb_head           <= lsb_head + 1;
+            end
+            else begin
+                lsb_load_broadcast <= `FALSE;
             end
 
-            //excute step 1: work out address
-            if(cur_lsb_ready != `ENTRY_NULL)begin
-                if(op_type[cur_lsb_ready] == `ILoadType)begin
-                     state[cur_lsb_ready]   <= `Addressed;
+            //excute ready head
+            if(state[lsb_head] == `Ready)begin
+                if(op_type[lsb_head] == `ILoadType)begin
+                     state[lsb_head]        <= `Loading;
                      lsb_store_broadcast    <= `FALSE;
-                     address[cur_lsb_ready] <= Vj[cur_lsb_ready] + A[cur_lsb_ready];
+                     lsb_load               <= `TRUE;
+                     load_address           <= Vj[lsb_head] + A[lsb_head];
                 end
                 else begin
-                    state[cur_lsb_ready]    <= `WaitingStore;
+                    state[lsb_head]         <= `WaitingStore;
                     lsb_store_broadcast     <= `TRUE;
-                    store_entry_out         <= entry[cur_lsb_ready];
-                    address[cur_lsb_ready]  <= Vj[cur_lsb_ready] + A[cur_lsb_ready];
-                    result [cur_lsb_ready]  <= Vk[cur_lsb_ready];
+                    store_entry_out         <= entry[lsb_head];
                 end
-
             end
             else begin
                 lsb_store_broadcast <= `FALSE;
             end
 
-            //excute step 2: find out whether load
-            if(execute_enable && cur_storing == `ENTRY_NULL && cur_loading == `ENTRY_NULL && cur_addressed != `ENTRY_NULL)begin
-                if(closest_pre_store[cur_addressed] != `ENTRY_NULL)begin
-                    lsb_load_broadcast   <= `TRUE;
-                    load_result          <= result[closest_pre_store[cur_addressed]];
-                    load_entry_out       <= entry[cur_addressed];
-                    state[cur_addressed] <= `Empty;
-                end
-                else begin
-                    cur_loading  <= cur_addressed;
-                    lsb_load     <= `TRUE;
-                    load_address <= address[cur_addressed];
-                    op_type_load <= op_type [cur_addressed];
-                    state[cur_addressed] <= `Loading;
-                    lsb_load_broadcast <= `FALSE;
-                end
-            end
-            //update lsb_load_broadcast
-            else begin
-                if(!finish_load)lsb_load_broadcast <= `FALSE;
-            end
         end
     end
 
-    always @(*)begin
-        execute_enable = `TRUE;
-        for(i = 0; i < LSB_SIZE; i = i + 1)begin
-            if(state[i] == `Waiting || state[i] == `Ready)execute_enable = `FALSE;
-        end
-        for(i = 0; i < LSB_SIZE; i = i + 1)begin
-            if(state[i] == `Waiting && Qj[i] == `ENTRY_NULL && Qk[i] == `ENTRY_NULL)
-                state[i] = `Ready;
-        end
-
-        i = 0;
-        while( i < 6'd32 && state[i] != `Empty ) i = i + 1;
-        cur_lsb_empty = i;
-
-        i = 0;
-        while( i < 6'd32 && state[i] != `Storing )i = i + 1;
-        cur_storing = i;
-
-        while( i < 6'd32 && state[i] != `Loading )i = i + 1;
-        cur_loading = i;
-
-        while( i < 6'd32 && state[i] != `Addressed )i = i + 1;
-        cur_addressed = i;
-
-        i = 0;
-        while( i < 6'd32 && state[i] != `Ready )i = i + 1;
-        cur_lsb_ready = i;
-    end
-
-    always @(*)begin
-        for(i = 0; i < LSB_SIZE; i = i + 1)begin
-            closest_pre_store[i] = `ENTRY_NULL;
-            if(state[i] == `Addressed)begin
-            for(j = 0; j < LSB_SIZE; j = j + 1)begin
-                if(state[j] == `WaitingStore && address[j] == address[i])begin
-                    if((entry[j] + `ROB_SIZE - rob_head) % `ROB_SIZE < (entry[i] + `ROB_SIZE - rob_head) % `ROB_SIZE)begin
-                        if(closest_pre_store[i] == `ENTRY_NULL)closest_pre_store[i] = j;
-                        else begin
-                            if((entry[j] + `ROB_SIZE - rob_head) % `ROB_SIZE > (entry[closest_pre_store[i]] + `ROB_SIZE - rob_head) % `ROB_SIZE)
-                            closest_pre_store[i] = j;
-                        end
-                    end
-                end
-            end
-            end
-        end
-    end
-    
 
 endmodule
