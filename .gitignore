@@ -1,6 +1,3 @@
-riscv/testspace/*
+riscv/testspace/
 riscv/testcase/
-*.o
-*.vcd
-
-!.keep
+riscv/test/
