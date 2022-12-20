@@ -16,15 +16,15 @@ module IF(
 
     //rob issue
     input   wire                        rob_is_full,
-    output  reg                         ins_to_rob,
+    output  wire                        ins_to_rob,
 
     //rs issue
     input   wire                        rs_is_full,
-    output  reg                         ins_to_rs,
+    output  wire                        ins_to_rs,
 
     //lsb issue
     input   wire                        lsb_is_full,
-    output  reg                         ins_to_lsb,
+    output  wire                        ins_to_lsb,
 
     //memory_controller
     input   wire                        is_idle,

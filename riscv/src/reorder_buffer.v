@@ -1,33 +1,33 @@
 `include "operaType.v"
 
 module reorder_buffer(
-    input   wire                clk_in,             // system clock signal
-    input   wire                rst_in,             // reset signal
-    input   wire                rdy_in,             // ready signal, pause cpu when low
+    input   wire                    clk_in,             // system clock signal
+    input   wire                    rst_in,             // reset signal
+    input   wire                    rdy_in,             // ready signal, pause cpu when low
 
-    output  wire                rob_is_full,
-    output  wire                cur_entry,
-    input   wire                roll_back,
+    output  wire                    rob_is_full,
+    output  wire   [`ENTRY_RANGE]   cur_entry,
+    input   wire                    roll_back,
 
     //memory-controller
-    input   wire                finish_store,
-
-    //ISQ
-    input   wire                get_instruction,
-    input   wire    [31:0]      isq_ins_in,
-    input   wire    [31:0]      isq_pc_in,
-
-    //decoder
-    input   wire    [5:0]       rd_in,
-    input   wire    [2:0]       op_type_in,
-    input   wire    [5:0]       op_in,
-
-    //broadcast
-    output  reg                 rob_commit,
-    output  reg     [31:0]      rob_pc_commit,
-    output  reg     [5:0]       rob_op_commit,
-    output  reg     [2:0]       rob_op_type_commit,
-    output  reg     [31:0]      rob_result_out,
+    input   wire                    finish_store,
+    
+    //ISQ   
+    input   wire                    get_instruction,
+    input   wire    [31:0]          isq_ins_in,
+    input   wire    [31:0]          isq_pc_in,
+    
+    //decoder   
+    input   wire    [5:0]           rd_in,
+    input   wire    [2:0]           op_type_in,
+    input   wire    [5:0]           op_in,
+    
+    //broadcast   
+    output  reg                     rob_commit,
+    output  reg     [31:0]          rob_pc_commit,
+    output  reg     [5:0]           rob_op_commit,
+    output  reg     [2:0]           rob_op_type_commit,
+    output  reg     [31:0]          rob_result_out,
 
     //rs alu broadcast
     input   wire                    rs_broadcast,

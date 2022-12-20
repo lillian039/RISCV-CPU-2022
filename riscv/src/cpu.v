@@ -49,14 +49,14 @@ module cpu(
     wire    [`ENTRY_RANGE]  lsb_load_entry_out;
 
     wire                    lsb_store_broadcast;
-    wire                    lsb_store_entry_out;
+    wire    [`ENTRY_RANGE]  lsb_store_entry_out;
 
     //rs
     wire                    rs_is_full;
     wire                    ins_to_rs;
 
     wire                    rs_broadcast;
-    wire    [`ADDR_RANGE]   rs_entry;
+    wire    [`ENTRY_RANGE]  rs_entry;
     wire    [31:0]          rs_value;
     wire    [31:0]          rs_pc_result;
     wire                    rs_new_calculate;
@@ -115,20 +115,20 @@ module cpu(
       .rw_select            (mem_wr),
       .ram_store_data       (mem_dout),
       .ram_load_data        (mem_din),
-      .addr_in              (mem_a[17:0]),
+      .addr_in              (mem_a[16:0]),
 
       .lsb_load             (lsb_load),
       .load_address         (load_address),
       .op_type_load         (op_type_load),
       .get_load_data        (get_load_data),
-      .finish_load          (finish_load),
+      .finished_load        (finish_load),
 
 
       .lsb_store            (lsb_store),
       .store_address        (store_address),
       .op_type_store        (op_type_store),
       .get_store_data       (get_store_data),
-      .finish_store         (finish_store),
+      .finished_store       (finish_store),
 
       .fetch_start          (fetch_start),
       .pc                   (fetch_pc),
@@ -168,13 +168,13 @@ module cpu(
       .instruction_out      (instruction_isq),
       .isq_pc_out           (isq_pc_out),
 
-      .roll_back            (roll_back)
+      .roll_back_out        (roll_back)
     );
 
-    Decoder decoder(
+    decoder decoder(
       .op_in                (instruction_isq),
 
-      .imm                  (imm_decoder),
+      .imm_out              (imm_decoder),
       .op_out               (op_decoder),
       .rs1                  (rs1_decoder),
       .rs2                  (rs2_decoder),
@@ -230,18 +230,13 @@ module cpu(
 
       .is_full_out          (lsb_is_full),
 
-      .lsb_op_out           (lsb_alu_op), 
-      .lsb_vj_out           (lsb_alu_vj),
-      .lsb_vk_out           (lsb_alu_vk),
-      .lsb_imm_out          (lsb_alu_imm),
-
       .rs_broadcast         (rs_broadcast),
       .rs_entry             (rs_entry),
       .rs_value             (rs_value),
 
       .rob_commit           (rob_commit),
       .rob_entry_commit     (rob_entry_commit),
-      .rob_op_type_commit   (rob_op_type_commit),
+      .rob_op_type_commit   (rob_op_type),
       .rob_result_out       (rob_result),
 
       .rob_head             (rob_head),
@@ -274,6 +269,11 @@ module cpu(
     wire  [31:0]          rs_pc_out;
     wire  [`ENTRY_RANGE]  rs_entry_out;
 
+    wire                      alu_broadcast;
+    wire  [`ENTRY_RANGE]      alu_entry;
+    wire  [31:0]              alu_value;
+    wire  [31:0]              alu_pc_out;
+
 
     reservation_station RS(
       .clk_in               (clk_in),
@@ -293,14 +293,14 @@ module cpu(
       .Qk_in                (Qk),
 
       .imm_in               (imm_decoder),
-      .op_type_in           (op_type_decoder),
+      .op_type_in           (op_decoder),
       .rd_in                (rd_decoder),
 
       .is_full_out          (rs_is_full),
 
       .new_calculate        (rs_new_calculate),
       .rs_op_out            (rs_op_out),
-      .rs_op_out            (rs_instruct_out),
+      .rs_instruct_out      (rs_instruct_out),
       .rs_vj_out            (rs_vj_out),
       .rs_vk_out            (rs_vk_out),
       .rs_imm_out           (rs_imm_out),
@@ -321,11 +321,6 @@ module cpu(
       .rs_result            (rs_value),
       .rs_pc_result         (rs_pc_result)
     );    
-
-    wire                      alu_broadcast;
-    wire  [`ENTRY_RANGE]      alu_entry;
-    wire  [31:0]              alu_value;
-    wire  [31:0]              alu_pc_out;
 
     alu rs_alu(
       .clk_in               (clk_in),
@@ -369,7 +364,7 @@ module cpu(
       .rob_commit           (rob_commit),
       .rob_pc_commit        (rob_pc_commit),
       .rob_op_commit        (rob_op_commit),
-      .rob_op_type_commit   (rob_op_type_commit),
+      .rob_op_type_commit   (rob_op_type),
       .rob_result_out       (rob_result),
 
       .rs_broadcast         (rs_broadcast),

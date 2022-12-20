@@ -8,7 +8,7 @@ module load_store_buffer
     input   wire    [31:0]          pc_now_in,
     input   wire                    get_instruction,
     input   wire    [31:0]          instruction_in,
-    input   wire    [31:0]          entry_in,
+    input   wire    [`ENTRY_RANGE]  entry_in,
 
     //predict wrong
     input   wire                    roll_back,
@@ -16,8 +16,8 @@ module load_store_buffer
     //RegisterFile   
     input   wire    [31:0]          Vj_in,
     input   wire    [31:0]          Vk_in,
-    input   wire    [31:0]          Qj_in,
-    input   wire    [31:0]          Qk_in,
+    input   wire    [`ENTRY_RANGE]  Qj_in,
+    input   wire    [`ENTRY_RANGE]  Qk_in,
      
     //decoder    
     input   wire    [31:0]          imm_in,
