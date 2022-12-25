@@ -49,14 +49,17 @@ module branch_target_buffer(
         for( i = 0; i < BTBSIZE; i = i + 1)begin
             btb[i] <= `weaklyNotTaken;
         end
-        pc <= 0;
-        stop_fetching <= `FALSE;
+            pc <= 0;
+            stop_fetching <= `FALSE;
         end
 
         else if(!rdy_in)begin//低信号或没有需要判断的jump  pause
         end
 
-        else begin
+        else if(roll_back)begin
+            stop_fetching <= `FALSE;
+        end 
+        begin
         if(fetch_new_instruction)begin
             if(op_in == `JAL)begin
                 pc <= pc + imm;
@@ -74,13 +77,13 @@ module branch_target_buffer(
             end
         end
         if(rob_commit)begin
-            if(op_in == `JALR)begin
+            if(rob_op_commit == `JALR)begin
                 stop_fetching <= `FALSE;
                 pc <= rob_pc_result;
                 roll_back <= `FALSE;
             end  
-            else if(op_type == `BType)begin
-                if(btb[hash_idx_pc] == `weaklyNotTaken || btb[hash_idx_pc] == `stronglyNotTaken )begin
+            else if(rob_op_type == `BType)begin
+                if(btb[hash_idx_rob] == `weaklyNotTaken || btb[hash_idx_rob] == `stronglyNotTaken )begin
                     if(rob_result == `TRUE) begin
                         roll_back <= `TRUE;
                         pc <= rob_pc_result;

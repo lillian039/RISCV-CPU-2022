@@ -81,11 +81,12 @@ module load_store_buffer
 
     assign          is_full_out     = lsb_head == lsb_rear + 1;
     wire    [4:0]   cur_lsb_empty   = lsb_rear;
-    assign          is_empty = lsb_head == lsb_rear;
+    wire            is_empty = lsb_head == lsb_rear;
 
    // wire    [`ENTRY_NULL]   debug_Qj = Qj[lsb_head];
    // wire    [`ENTRY_NULL]   debug_Qk = Qk[lsb_head];
     wire    [3:0]   debug_state = state[lsb_head];
+    wire    [31:0]  debug_Vk_head = Vk[lsb_head];
 
     integer i;
 

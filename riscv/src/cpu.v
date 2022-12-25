@@ -113,6 +113,8 @@ module cpu(
       .rst_in               (rst_in),
       .rdy_in               (rdy_in),
 
+      .roll_back            (roll_back),
+
       .rw_select            (mem_wr),
       .ram_store_data       (mem_dout),
       .ram_load_data        (mem_din),

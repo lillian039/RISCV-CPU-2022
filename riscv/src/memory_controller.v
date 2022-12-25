@@ -11,6 +11,8 @@ module memory_controller
     input   wire                    clk_in,// system clock signal
     input   wire                    rst_in,// reset signal
     input   wire                    rdy_in,// ready signal, pause cpu when low
+
+    input   wire                    roll_back,
     
     //RAM
     output  wire                    rw_select,
@@ -126,6 +128,31 @@ module memory_controller
         else if(!rdy_in)begin//低信号 pause
 
         end
+        else if(roll_back)begin
+            load_cnt <= 0;
+            store_cnt <= 0;
+            fetch_cnt <= 0;
+
+            is_loading <= `FALSE;
+            is_storing <= `FALSE;
+            is_fetching <= `FALSE;
+
+            load_finish <= 0;
+            store_finish <= 0;
+            fetch_finish <= 0;
+
+            addr_record <= 0;
+
+            load_data <= 0;
+            load_op <= 0;
+
+            store_data <= 0;
+            store_op <= 0;
+
+            fetch_instruct <= 0;
+
+            controller_is_idle <= `TRUE;
+        end
         else begin
             if(is_idle)begin
                 if(load_finish == `TRUE)begin
@@ -149,6 +176,7 @@ module memory_controller
                     store_op    <= op_type_store;
                     addr_record  <= store_address;
                     controller_is_idle <= `FALSE;
+                    store_data <= get_store_data;
                     if(op_type_store == `SW)        store_cnt <= 2'b11;//3
                     else if(op_type_store == `SH)   store_cnt <= 2'b01;//1
                     else if(op_type_store == `SB)   store_cnt <= 2'b00;//0

@@ -47,6 +47,12 @@ module register
     assign Vj = rs1_in == `NULL ? `ENTRY_NULL : busy[rs1_in] ? 31'd0           : value[rs1_in];
     assign Vk = rs2_in == `NULL ? `ENTRY_NULL : busy[rs2_in] ? 31'd0           : value[rs2_in];
 
+    wire    [`ENTRY_RANGE]  debug_1_reorder = reorder[1];
+    wire    [31:0]          debug_1_value = value[1];
+
+    wire   [`ENTRY_RANGE]  debug_2_reorder = reorder[2];
+    wire   [31:0]          debug_2_value   = value[2];
+
     always @ (posedge clk) begin
         if(rst_in == `TRUE || roll_back == `TRUE)begin//清空
             for(i = 0; i < REG_SIZE; i = i + 1)begin
@@ -67,6 +73,7 @@ module register
         if (rob_commit && rob_des != `NULL && reorder[rob_des] == rob_entry)begin
             value[rob_des] <= rob_result;
             busy [rob_des] <= `FALSE;
+            reorder [rob_des] <= `ENTRY_NULL;
         end
         end
     end
