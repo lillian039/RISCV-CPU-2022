@@ -30,6 +30,8 @@ module IF(
     input   wire                        is_idle,
     input   wire                        finish_fetch,
     input   wire    [31:0]              instruction_in,
+    input   wire    [31:0]              instruction_pc_in,
+
     output  wire    [31:0]              pc_out,
     output  wire                        fetch_start,
 
@@ -40,7 +42,6 @@ module IF(
     //btb
     output  wire                        roll_back_out
 );
-    wire    [31:0]      pc;
     wire                isq_is_full;
 
     wire                roll_back;
@@ -78,7 +79,7 @@ module IF(
 
         .instruction_ready      (finish_fetch),
         .instruction_in         (instruction_in),
-        .pc_in                  (pc),
+        .pc_in                  (instruction_pc_in),
 
         .rob_is_full            (rob_is_full),
         .ins_to_rob             (ins_to_rob),
@@ -107,7 +108,7 @@ module IF(
         .op_in                  (op),
         .imm                    (imm),
 
-        .pc_out                 (pc),
+        .pc_out                 (pc_out),
 
         .rob_commit             (rob_commit),
         .rob_pc_commit          (rob_pc_commit),

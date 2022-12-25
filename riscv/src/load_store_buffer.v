@@ -79,8 +79,13 @@ module load_store_buffer
     reg     [4:0]               lsb_rear;
 
 
-    assign  is_full_out     = lsb_head == lsb_rear + 1;
-    assign  cur_lsb_empty   = lsb_rear;
+    assign          is_full_out     = lsb_head == lsb_rear + 1;
+    wire    [4:0]   cur_lsb_empty   = lsb_rear;
+    assign          is_empty = lsb_head == lsb_rear;
+
+   // wire    [`ENTRY_NULL]   debug_Qj = Qj[lsb_head];
+   // wire    [`ENTRY_NULL]   debug_Qk = Qk[lsb_head];
+    wire    [3:0]   debug_state = state[lsb_head];
 
     integer i;
 
@@ -88,7 +93,35 @@ module load_store_buffer
         if(rst_in || roll_back)begin//清空
             for(i = 0; i < LSB_SIZE; i = i + 1)begin
                 state[i] <= `Empty;
+                Vj[i] <= 0;
+                Vk[i] <= 0;
+                Qj[i] <= 0;
+                Qk[i] <= 0;
+                A[i] <= 0;
+                op_type[i] <= 0;
+                op[i] <= 0;
+                entry[i] <= 0;
             end
+
+            lsb_load <= 0;
+            load_address <= 0;
+            op_type_load <= 0;
+
+            data_store <= 0;
+            lsb_store <= 0;
+            store_address <= 0;
+            op_type_store <= 0;
+
+            lsb_load_broadcast <= 0;
+            load_result <= 0;
+            load_entry_out <= 0;
+
+            lsb_store_broadcast <= 0;
+            store_entry_out <= 0;
+
+            lsb_head   <= 5'b0;
+            lsb_rear   <= 5'b0;
+             
         end
 
         else if(!rdy_in)begin//低信号 pause
@@ -96,10 +129,6 @@ module load_store_buffer
         end
 
         else begin 
-            for(i = 0; i < LSB_SIZE; i = i + 1)begin
-                if(state[i] == `Waiting && Qj[i] == `ENTRY_NULL && Qk[i] == `ENTRY_NULL)
-                    state[i] <= `Ready;
-            end
             //issue
             if (get_instruction && (op_type_in == `SType || op_type_in == `ILoadType))begin
                 entry       [cur_lsb_empty] <= entry_in;
@@ -111,83 +140,92 @@ module load_store_buffer
                 op_type     [cur_lsb_empty] <= op_type_in;
                 op          [cur_lsb_empty] <= op_in;
                 state       [cur_lsb_empty] <= `Waiting;
+                lsb_rear <= lsb_rear + 1;
             end
 
-            //update by broadcast
-            if(rs_broadcast)begin
-                for(i = 0; i <= LSB_SIZE; i = i + 1)begin
-                    if(state[i] == `Waiting)begin
-                        if(Qj[i] == rs_entry)begin
-                            Qj[i] <= `ENTRY_NULL;
-                            Vj[i] <= rs_value;
-                        end
-                        if(Qk[i] == rs_entry)begin
-                            Qk[i] <= `ENTRY_NULL;
-                            Vk[i] <= rs_value;
+            if(!is_empty)begin
+                for(i = 0; i < LSB_SIZE; i = i + 1)begin
+                    if(state[i] == `Waiting && Qj[i] == `ENTRY_NULL && Qk[i] == `ENTRY_NULL)
+                        state[i] <= `Ready;
+                end
+                //update by broadcast
+                if(rs_broadcast)begin
+                    for(i = 0; i <= LSB_SIZE; i = i + 1)begin
+                        if(state[i] == `Waiting)begin
+                            if(Qj[i] == rs_entry)begin
+                                Qj[i] <= `ENTRY_NULL;
+                                Vj[i] <= rs_value;
+                            end
+                            if(Qk[i] == rs_entry)begin
+                                Qk[i] <= `ENTRY_NULL;
+                                Vk[i] <= rs_value;
+                            end
                         end
                     end
                 end
-            end
 
-            if(lsb_load_broadcast)begin
-                for(i = 0; i <= LSB_SIZE; i = i + 1)begin
-                    if(state[i] == `Waiting)begin
-                        if(Qj[i] == load_result)begin
-                            Qj[i] <= `ENTRY_NULL;
-                            Vj[i] <= load_result;
-                        end
-                        if(Qk[i] == load_result)begin
-                            Qk[i] <= `ENTRY_NULL;
-                            Vk[i] <= load_result;
+                if(lsb_load_broadcast)begin
+                    for(i = 0; i <= LSB_SIZE; i = i + 1)begin
+                        if(state[i] == `Waiting)begin
+                            if(Qj[i] == load_result)begin
+                                Qj[i] <= `ENTRY_NULL;
+                                Vj[i] <= load_result;
+                            end
+                            if(Qk[i] == load_result)begin
+                                Qk[i] <= `ENTRY_NULL;
+                                Vk[i] <= load_result;
+                            end
                         end
                     end
                 end
-            end
 
 
-            if(rob_commit)begin
-                if(rob_op_type_commit == `SType)begin
-                    state[lsb_head] <= `Storing;
-                    lsb_store       <= `TRUE;
-                    store_address   <= Vj[lsb_head] + A[lsb_head];
-                    data_store      <= Vk[lsb_head];
-                    op_type_store   <= op_type[lsb_head];
+                if(rob_commit)begin
+                    if(rob_op_type_commit == `SType)begin
+                        state[lsb_head] <= `Storing;
+                        lsb_store       <= `TRUE;
+                        store_address   <= Vj[lsb_head] + A[lsb_head];
+                        data_store      <= Vk[lsb_head];
+                        op_type_store   <= op[lsb_head];
+                    end
                 end
-            end
 
-            if(finish_store)begin
-                lsb_store   <= `FALSE;
-                lsb_head    <= lsb_head + 1;
-            end
-            else if(finish_load)begin
-                lsb_load           <= `FALSE;
-                lsb_load_broadcast <= `TRUE;
-                load_result        <= data_load;
-                load_entry_out     <= entry_in[lsb_head];
-                lsb_head           <= lsb_head + 1;
-            end
-            else begin
-                lsb_load_broadcast <= `FALSE;
-            end
-
-            //excute ready head
-            if(state[lsb_head] == `Ready)begin
-                if(op_type[lsb_head] == `ILoadType)begin
-                     state[lsb_head]        <= `Loading;
-                     lsb_store_broadcast    <= `FALSE;
-                     lsb_load               <= `TRUE;
-                     load_address           <= Vj[lsb_head] + A[lsb_head];
+                if(finish_store)begin
+                    lsb_store   <= `FALSE;
+                    state[lsb_head] <= `Empty;
+                    lsb_head    <= lsb_head + 1;
+                end
+                else if(finish_load)begin
+                    lsb_load           <= `FALSE;
+                    lsb_load_broadcast <= `TRUE;
+                    load_result        <= data_load;
+                    state[lsb_head] <= `Empty;
+                    load_entry_out     <= entry_in[lsb_head];
+                    lsb_head           <= lsb_head + 1;
                 end
                 else begin
-                    state[lsb_head]         <= `WaitingStore;
-                    lsb_store_broadcast     <= `TRUE;
-                    store_entry_out         <= entry[lsb_head];
+                    lsb_load_broadcast <= `FALSE;
                 end
-            end
-            else begin
-                lsb_store_broadcast <= `FALSE;
-            end
 
+                //excute ready head
+                if(state[lsb_head] == `Ready)begin
+                    if(op_type[lsb_head] == `ILoadType)begin
+                        state[lsb_head]        <= `Loading;
+                        lsb_store_broadcast    <= `FALSE;
+                        lsb_load               <= `TRUE;
+                        op_type_load           <= op[lsb_head];
+                        load_address           <= Vj[lsb_head] + A[lsb_head];
+                    end
+                    else begin
+                        state[lsb_head]         <= `WaitingStore;
+                        lsb_store_broadcast     <= `TRUE;
+                        store_entry_out         <= entry[lsb_head];
+                    end
+                end
+                else begin
+                    lsb_store_broadcast <= `FALSE;
+                end
+        end
         end
     end
 

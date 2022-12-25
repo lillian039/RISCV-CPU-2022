@@ -67,6 +67,7 @@ module cpu(
     wire    [31:0]          fetch_pc;
     wire                    finish_fetch;
     wire    [31:0]          fetch_instruct_out;
+    wire    [31:0]          fetch_instruct_pc_out;
 
     //isq
     wire    [31:0]          instruction_isq;
@@ -84,9 +85,9 @@ module cpu(
     wire    [5:0]           rob_op_commit;
     wire    [2:0]           rob_op_type;
     wire    [31:0]          rob_result;
-    wire    [31:0]          rob_pc_result;
+    wire    [31:0]          rob_pc_result_commit;
     wire    [`ENTRY_RANGE]  rob_entry_commit;
-    wire    [5:0]           rob_des_commt;
+    wire    [5:0]           rob_des_commit;
 
     wire                    rob_is_full;
     wire                    ins_to_rob;
@@ -115,7 +116,7 @@ module cpu(
       .rw_select            (mem_wr),
       .ram_store_data       (mem_dout),
       .ram_load_data        (mem_din),
-      .addr_in              (mem_a[16:0]),
+      .addr_in              (mem_a),
 
       .lsb_load             (lsb_load),
       .load_address         (load_address),
@@ -134,6 +135,7 @@ module cpu(
       .pc                   (fetch_pc),
       .finish_fetch         (finish_fetch),
       .instruction_out      (fetch_instruct_out),
+      .instruction_pc_out   (fetch_instruct_pc_out),
 
       .is_idle              (is_idle)
     );    
@@ -148,7 +150,7 @@ module cpu(
       .rob_op_commit        (rob_op_commit),
       .rob_op_type          (rob_op_type),
       .rob_result           (rob_result),
-      .rob_pc_result        (rob_pc_result),
+      .rob_pc_result        (rob_pc_result_commit),
 
       .rob_is_full          (rob_is_full),
       .ins_to_rob           (ins_to_rob),
@@ -162,6 +164,8 @@ module cpu(
       .is_idle              (is_idle),
       .finish_fetch         (finish_fetch),
       .instruction_in       (fetch_instruct_out),
+      .instruction_pc_in    (fetch_instruct_pc_out),
+
       .pc_out               (fetch_pc),
       .fetch_start          (fetch_start),
 
@@ -191,7 +195,7 @@ module cpu(
 
       .rob_commit           (rob_commit),
       .rob_entry            (rob_entry_commit),
-      .rob_des              (rob_des_commt),
+      .rob_des              (rob_des_commit),
       .rob_result           (rob_result),
 
       .rob_new_entry        (rob_new_entry),
@@ -363,14 +367,21 @@ module cpu(
 
       .rob_commit           (rob_commit),
       .rob_pc_commit        (rob_pc_commit),
+      .rob_pc_result_commit (rob_pc_result_commit),
       .rob_op_commit        (rob_op_commit),
       .rob_op_type_commit   (rob_op_type),
       .rob_result_out       (rob_result),
+      .rob_entry_commit     (rob_entry_commit),
+      .rob_des_commit       (rob_des_commit),
 
       .rs_broadcast         (rs_broadcast),
       .rs_result            (rs_value),
       .rs_pc_in             (rs_pc_result),
       .rs_entry             (rs_entry),
+
+      .lsb_broadcast        (lsb_load_broadcast),
+      .lsb_result           (lsb_load_result),
+      .lsb_entry            (lsb_load_entry_out),
 
       .rob_head_out         (rob_head),
 

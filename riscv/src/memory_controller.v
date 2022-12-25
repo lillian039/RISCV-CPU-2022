@@ -16,7 +16,7 @@ module memory_controller
     output  wire                    rw_select,
     output  reg    [7:0]            ram_store_data,
     input   wire   [7:0]            ram_load_data,
-    output  wire   [ADDR_WIDTH-1:0] addr_in,
+    output  wire   [`ADDR_RANGE]    addr_in,
 
     //lsb
     input   wire                    lsb_load,
@@ -36,6 +36,7 @@ module memory_controller
     input   wire    [31:0]          pc,
     output  wire                    finish_fetch,
     output  wire    [31:0]          instruction_out,
+    output  reg     [31:0]          instruction_pc_out,
 
     output  wire                    is_idle
 );
@@ -70,12 +71,14 @@ module memory_controller
     wire    [31:0]          icache_hit_inst;
     
     //index pc[7:0]
-    assign  icache_hit = icache_valid[pc[7:0]] && icache_tags[pc[7:0]] == pc[16:0];
-    assign  icache_hit_inst = icache_inst[pc[7:0]];
+    assign  icache_hit = icache_valid[pc[6:0]] && icache_tags[pc[6:0]] == pc[16:0];
+    assign  icache_hit_inst = icache_inst[pc[6:0]];
+
+    reg     controller_is_idle;
 
 
-    assign  is_idle = !is_loading && !is_storing && !is_fetching;
-    assign  rw_select = is_storing ?  0 : 1; //1 read 0 write
+    assign  is_idle = controller_is_idle;
+    assign  rw_select = is_storing ?  1 : 0; // 0 read 1 write
     assign  addr_in = addr_record;
 
     assign  finished_load = load_finish;
@@ -86,57 +89,93 @@ module memory_controller
     assign  finish_fetch = fetch_finish;
     assign  instruction_out = fetch_instruct;
 
-    always @(*)begin
-        if(store_op == `TRUE && is_idle)begin
-            is_storing  = `TRUE;
-            store_op    = op_type_store;
-            addr_record  = store_address;
-            if(op_type_store == `SW)        store_cnt = 2'b11;//3
-            else if(op_type_store == `SH)   store_cnt = 2'b01;//1
-            else if(op_type_store == `SB)   store_cnt = 2'b00;//0
-        end
-
-        else if(lsb_load == `TRUE && is_idle)begin
-            is_loading  = `TRUE;
-            load_op     = op_type_load;
-            addr_record   = load_address;
-            if(op_type_load == `LW) load_cnt = 3'b100;//4
-            else if(op_type_load == `LH || op_type_load == `LHU) load_cnt = 3'b010;//2
-            else if(op_type_load == `LB || op_type_load == `LBU) load_cnt = 3'b001;//1
-        end
-
-        else if(fetch_start == `TRUE && is_idle)begin
-            is_fetching = `TRUE;
-            addr_record = pc[16:0];
-            fetch_cnt = 3'b100;//4
-        end
-
-    end
+    integer i;
 
     always @(posedge clk_in)  begin
         if(rst_in)begin//清空
+            load_cnt <= 0;
+            store_cnt <= 0;
+            fetch_cnt <= 0;
+
             is_loading <= `FALSE;
             is_storing <= `FALSE;
             is_fetching <= `FALSE;
+
+            load_finish <= 0;
+            store_finish <= 0;
+            fetch_finish <= 0;
+
+            addr_record <= 0;
+
+            load_data <= 0;
+            load_op <= 0;
+
+            store_data <= 0;
+            store_op <= 0;
+
+            fetch_instruct <= 0;
+
+            controller_is_idle <= `TRUE;
+
+            for(i = 0; i < 128; i = i + 1)begin
+                icache_tags[i] <= 0;
+                icache_valid[i] <= 0;
+                icache_inst[i] <= 0;
+            end
         end
         else if(!rdy_in)begin//低信号 pause
 
         end
         else begin
-            if(load_finish == `TRUE)begin
-                load_finish <= `FALSE;
-            end
-            if(store_finish == `TRUE)begin
-                store_finish <= `FALSE;
-            end
-            if(fetch_finish == `TRUE)begin
-                fetch_finish <= `FALSE;
-                if(!icache_hit)begin
-                    icache_valid [pc[7:0]] <= `TRUE;
-                    icache_inst  [pc[7:0]] <= fetch_instruct;
-                    icache_tags  [pc[7:0]] <= pc[16:0];
+            if(is_idle)begin
+                if(load_finish == `TRUE)begin
+                    load_finish <= `FALSE;
                 end
+                if(store_finish == `TRUE)begin
+                     store_finish <= `FALSE;
+                end
+                else if(fetch_finish == `TRUE)begin
+                    fetch_finish <= `FALSE;
+                    if(!icache_hit)begin
+                        icache_valid [pc[7:0]] <= `TRUE;
+                        icache_inst  [pc[7:0]] <= fetch_instruct;
+                        icache_tags  [pc[7:0]] <= pc[16:0];
+                    end
+                end
+                else begin
+
+                if(lsb_store == `TRUE )begin
+                    is_storing  <= `TRUE;
+                    store_op    <= op_type_store;
+                    addr_record  <= store_address;
+                    controller_is_idle <= `FALSE;
+                    if(op_type_store == `SW)        store_cnt <= 2'b11;//3
+                    else if(op_type_store == `SH)   store_cnt <= 2'b01;//1
+                    else if(op_type_store == `SB)   store_cnt <= 2'b00;//0
+                end
+
+                else if(lsb_load == `TRUE)begin
+                    is_loading  <= `TRUE;
+                    load_op     <= op_type_load;
+                    addr_record   <= load_address;
+                    controller_is_idle <= `FALSE;
+                    if(op_type_load == `LW) load_cnt <= 3'b100;//4
+                    else if(op_type_load == `LH || op_type_load == `LHU) load_cnt <= 3'b010;//2
+                    else if(op_type_load == `LB || op_type_load == `LBU) load_cnt <= 3'b001;//1
+                end
+
+                else if(fetch_start == `TRUE)begin
+                    is_fetching <= `TRUE;
+                    addr_record <= pc[16:0];
+                    controller_is_idle <= `FALSE;
+                    fetch_cnt <= 3'b100;//4
+                    instruction_pc_out <= pc;
+                end
+                end
+
             end
+
+            else begin
             if(is_loading == `TRUE)begin
                 if(load_op == `LW)begin
                 if(load_cnt == 3'b100)begin  end
@@ -159,6 +198,7 @@ module memory_controller
                         if(load_op == `LHU) load_data[31:16] <= {16{ram_load_data[7]}};
                         is_loading <= `FALSE;
                         load_finish <= `TRUE;
+                        controller_is_idle <= `TRUE;
                 end
                 load_cnt <= load_cnt - 1;
                 addr_record <= addr_record + 1;
@@ -173,6 +213,7 @@ module memory_controller
                         if(load_op == `LBU) load_data[31:8] <= {32{ram_load_data[7]}};
                         is_loading <= `FALSE;
                         load_finish <= `TRUE;
+                        controller_is_idle <= `TRUE;
                     end
                 end
             end
@@ -186,6 +227,7 @@ module memory_controller
                     ram_store_data <= store_data[31:14];
                     is_storing <= `FALSE;
                     store_finish <= `TRUE;
+                    controller_is_idle <= `TRUE;
                 end
                 addr_record <= addr_record + 1;
                 store_cnt <= store_cnt - 1;
@@ -196,6 +238,7 @@ module memory_controller
                     ram_store_data <= store_data[15:8];
                     is_storing <= `FALSE;
                     store_finish <= `TRUE;
+                    controller_is_idle <= `TRUE;
                 end
                 addr_record <= addr_record + 1;
                 store_cnt <= store_cnt - 1;
@@ -204,6 +247,7 @@ module memory_controller
                     ram_store_data <= store_data[7:0];
                     is_storing <= `FALSE;
                     store_finish <= `TRUE;
+                    controller_is_idle <= `TRUE;
                 end
             end
             
@@ -216,16 +260,19 @@ module memory_controller
                     fetch_instruct[31:24] <= ram_load_data;
                     is_fetching <= `FALSE;
                     fetch_finish <= `TRUE;
+                    controller_is_idle <= `TRUE;
                 end
-                load_cnt <= load_cnt - 1; 
+                fetch_cnt <= fetch_cnt - 1; 
                 addr_record <= addr_record + 1;
             end
             else if(is_fetching && icache_hit == `TRUE)begin
                 fetch_instruct <= icache_hit_inst;
                 is_fetching    <= `FALSE;
                 fetch_finish   <= `TRUE;
+                controller_is_idle <= `TRUE;
             end
 
+        end
         end
     end   
 endmodule

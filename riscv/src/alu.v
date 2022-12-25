@@ -28,7 +28,6 @@ module alu(
 
     always @(*) begin
     case (op)
-
     //B format
     `BEQ:   
     begin 

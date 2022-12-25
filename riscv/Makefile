@@ -11,7 +11,7 @@ riscv_toolchain = /home/lillian/homework/riscv-toolchain
 riscv_bin = $(riscv_toolchain)/bin
 sys = $(prefix)/sys
 
-name = 000_array_test1
+name = 004_gcd
 #_no_testcase_name_check:
 #	@$(if $(strip $(name)),, echo 'Missing Testcase Name')
 #	@$(if $(strip $(name)),, exit 1)

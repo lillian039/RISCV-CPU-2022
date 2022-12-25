@@ -49,6 +49,8 @@ module branch_target_buffer(
         for( i = 0; i < BTBSIZE; i = i + 1)begin
             btb[i] <= `weaklyNotTaken;
         end
+        pc <= 0;
+        stop_fetching <= `FALSE;
         end
 
         else if(!rdy_in)begin//低信号或没有需要判断的jump  pause
@@ -64,7 +66,11 @@ module branch_target_buffer(
                 pc <= rob_pc_result;
             end
             else if(op_type == `BType)begin
-                if (btb[hash_idx_pc] == `weaklyNotTaken || btb[hash_idx_pc] == `stronglyNotTaken) pc <= pc + imm;
+                if (btb[hash_idx_pc] == `weaklyTaken || btb[hash_idx_pc] == `stronglyTaken) pc <= pc + imm;
+                else pc <= pc + 4;
+            end
+            else begin
+                pc <= pc + 4;
             end
         end
         if(rob_commit)begin

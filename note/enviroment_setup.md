@@ -18,3 +18,4 @@
 
    删去 `.vh`
 
+`sudo apt update` 一键拥有 wslg！纵享丝滑 gtkwave 体验

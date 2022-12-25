@@ -70,15 +70,18 @@ module reservation_station
     reg     [31:0]                  rs_pc   [RS_SIZE-1:0];
     reg     [5:0]                   op      [RS_SIZE-1:0];
 
+  //  reg     [RS_SIZE-1:0]           rs_empty; //1 empty 0 full
+  //  reg     [RS_SIZE-1:0]           rs_ready; //1 ready 0 no
+
     reg     [`ENTRY_RANGE]          cur_rs_empty;
     reg     [`ENTRY_RANGE]          cur_rs_ready;
 
     assign  is_full_out  = cur_rs_empty == `ENTRY_NULL;
 
-    assign  rs_broadcast = alu_broadcast;
-    assign  rs_entry     = alu_entry;
-    assign  rs_result    = alu_value; 
-    assign  rs_pc_result   = alu_pc_out;
+    assign  rs_broadcast    = alu_broadcast;
+    assign  rs_entry        = alu_entry;
+    assign  rs_result       = alu_value; 
+    assign  rs_pc_result    = alu_pc_out;
 
     integer i;
 
@@ -86,7 +89,25 @@ module reservation_station
         if(rst_in || roll_back)begin//清空
             for(i = 0; i < RS_SIZE; i = i + 1)begin
                 state[i] <= `Empty;
+                Vj[i] <= 0;
+                Vk[i] <= 0;
+                Qj[i] <= 0;
+                Qk[i] <= 0;
+                A [i] <= 0;
+                inst[i] <= 0;
+                entry[i] <= 0;
+                rs_pc[i] <= 0;
+                op[i] <= 0;
             end
+
+            new_calculate <= 0;
+            rs_op_out <= 0;
+            rs_instruct_out <= 0;
+            rs_vj_out <= 0;
+            rs_vk_out <= 0;
+            rs_imm_out <= 0;
+            rs_pc_out <= 0;
+            rs_entry_out <= 0;            
         end
 
         else if(!rdy_in)begin//低信号 pause
@@ -148,35 +169,31 @@ module reservation_station
 
         //then comes the execute part
        if (cur_rs_ready != `ENTRY_NULL)begin // find waiting
+            new_calculate   <= `TRUE;
             rs_op_out   <= op       [cur_rs_ready];
+            rs_instruct_out <= inst [cur_rs_ready];
             rs_vj_out   <= Vj       [cur_rs_ready];
             rs_vk_out   <= Vk       [cur_rs_ready];
-            rs_pc_out   <= rs_pc    [cur_rs_ready];
             rs_imm_out  <= A        [cur_rs_ready];
-            rs_instruct_out <= inst [cur_rs_ready];
+            rs_pc_out   <= rs_pc    [cur_rs_ready];
+            rs_entry_out <= entry   [cur_rs_ready];
             state[cur_rs_ready] <= `Empty;
-            new_calculate   <= `TRUE;
         end
         else new_calculate <= `FALSE;
-        //todo broadcast
         end
 
     end
 
+    integer j, k;
     always @(*)begin
-        for(i = 0; i < RS_SIZE; i = i + 1)begin
-            if(state[i] == `Waiting && Qj[i] == `ENTRY_NULL && Qk[i] == `ENTRY_NULL)
-                state[i] = `Ready;
+        cur_rs_empty = `ENTRY_NULL;
+        for(j = 0; j < 6'd32; j = j + 1)begin
+            if(state[j] == `Empty)cur_rs_empty = j;
         end
-        i = 0;
-        while( i < 6'd32 && state[i] != `Empty )begin
-            i = i + 1;
+
+        cur_rs_ready = `ENTRY_NULL;
+        for(k=0; k < 6'd32; k = k + 1)begin
+            if(state[k] == `Ready)cur_rs_ready = k;
         end
-        cur_rs_empty = i;
-        i = 0;
-        while( i < 6'd32 && state[i] != `Ready )begin
-            i = i + 1;
-        end
-        cur_rs_ready = i;
     end
     endmodule

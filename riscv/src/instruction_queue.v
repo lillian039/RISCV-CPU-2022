@@ -35,22 +35,31 @@ module instruction_queue(
 
     reg     [31:0]  instruction_isq     [31:0]; //size 32
     reg     [31:0]  pc_isq              [31:0];
+
     reg     [4:0]   isq_head;                   //q_head 0-31
     reg     [4:0]   isq_rear;                   //q_rear 0-31
 
     wire            isq_is_empty = isq_head == isq_rear;
 
     assign is_full = isq_head == isq_rear + 1;
-    assign instruction_out = instruction_isq[isq_head];//是上一个时钟周期的吗
+    assign instruction_out = instruction_isq[isq_head];
     assign ins_pc_out = pc_isq[isq_head];
+
+    integer i;
 
     always @(posedge clk_in) begin
         if(rst_in || roll_back)begin//清空isq
             isq_head    <= 0;
             isq_rear    <= 0;
+
             ins_to_lsb  <= 0;
             ins_to_rs   <= 0;
             ins_to_rob  <= 0;
+
+            for( i = 0; i < 32; i = i + 1)begin
+                instruction_isq[i] <= 32'b0;
+                pc_isq[i] <= 32'b0;
+            end
         end
         else if(!rdy_in)begin//低信号 pause
 
@@ -64,33 +73,45 @@ module instruction_queue(
             end
             
             if(isq_is_empty == `FALSE)begin
-            //to load store buffer
-            if(op_type_in == `SType || op_type_in == `ILoadType)begin
-                if (rob_is_full == `FALSE && lsb_is_full == `FALSE)begin
-                    ins_to_rob <= `TRUE;
-                    ins_to_lsb <= `TRUE;
-                    ins_to_rs  <= `FALSE;
-                    isq_head <= isq_head + 1;
-                end
-                else begin
-                    ins_to_rob <= `FALSE;
-                    ins_to_lsb <= `FALSE;
-                    ins_to_rs  <= `FALSE;
-                end
+
+            if(ins_to_rob)begin
+                isq_head <= isq_head + 1;
+                ins_to_rob <= `FALSE;
+                ins_to_lsb <= `FALSE;
+                ins_to_rs  <= `FALSE;
             end
             else begin
-                if (rob_is_full == `FALSE && rs_is_full == `FALSE)begin
-                    ins_to_rob <= `TRUE;
-                    ins_to_lsb <= `FALSE;
-                    ins_to_rs  <= `TRUE;
-                    isq_head <= isq_head + 1;
+            //to load store buffer
+                if(op_type_in == `SType || op_type_in == `ILoadType)begin
+                    if (rob_is_full == `FALSE && lsb_is_full == `FALSE)begin
+                        ins_to_rob <= `TRUE;
+                        ins_to_lsb <= `TRUE;
+                        ins_to_rs  <= `FALSE;
+                    end
+                    else begin
+                        ins_to_rob <= `FALSE;
+                        ins_to_lsb <= `FALSE;
+                        ins_to_rs  <= `FALSE;
+                    end
                 end
                 else begin
-                    ins_to_rob <= `FALSE;
-                    ins_to_lsb <= `FALSE;
-                    ins_to_rs  <= `FALSE;
+                    if (rob_is_full == `FALSE && rs_is_full == `FALSE)begin
+                        ins_to_rob <= `TRUE;
+                        ins_to_lsb <= `FALSE;
+                        ins_to_rs  <= `TRUE;
+                    end
+                    else begin
+                        ins_to_rob <= `FALSE;
+                        ins_to_lsb <= `FALSE;
+                        ins_to_rs  <= `FALSE;
+                    end
                 end
             end
+            end
+            else  begin
+                ins_to_rob <= `FALSE;
+                ins_to_lsb <= `FALSE;
+                ins_to_rs  <= `FALSE;
             end
         end
 

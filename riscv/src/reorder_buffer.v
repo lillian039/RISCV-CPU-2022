@@ -25,9 +25,12 @@ module reorder_buffer(
     //broadcast   
     output  reg                     rob_commit,
     output  reg     [31:0]          rob_pc_commit,
+    output  reg     [31:0]          rob_pc_result_commit,
     output  reg     [5:0]           rob_op_commit,
     output  reg     [2:0]           rob_op_type_commit,
     output  reg     [31:0]          rob_result_out,
+    output  reg     [`ENTRY_RANGE]  rob_entry_commit,
+    output  reg     [`ENTRY_RANGE]  rob_des_commit,
 
     //rs alu broadcast
     input   wire                    rs_broadcast,
@@ -71,16 +74,39 @@ module reorder_buffer(
     assign rob_head_out = rob_head;
     assign rob_rear_out = rob_rear;
 
+    wire  [31:0] debug_rob_head_instruction = rob_instruction[rob_head];
+
 
     integer  i;
 
       always @(posedge clk_in) begin
         if(rst_in || roll_back)begin//清空rob
           for(i = 0; i < ROB_SIZE; i = i + 1)begin
-            rob_ready[i] <= 0;
             rob_head <= 0;
             rob_rear <= 0;
+
+            rob_instruction[i] <= 0;
+            rob_entry[i]  <= 0;
+            rob_ready[i]  <= 0;
+            rob_result[i] <= 0;
+            rob_des[i]    <= 0;
+            rob_op[i]     <= 0;
+            rob_op_type[i]<= 0;
+            rob_pc[i]     <= 0;
+            rob_pc_result[i] <= 0;
+
           end
+          is_storing  <= 0;
+
+          rob_commit <= 0;
+          rob_pc_commit <= 0;
+          rob_op_commit <= 0;
+          rob_op_type_commit <= 0;
+          rob_result_out <= 0;
+          rob_entry_commit <= 0;
+          rob_des_commit <= 0;
+          rob_pc_result_commit <= 0;
+
         end
 
         else if(!rdy_in)begin//低信号 pause
@@ -103,11 +129,15 @@ module reorder_buffer(
 
             //commit part
             if(!is_storing && rob_ready[rob_head])begin
-                rob_commit <= `TRUE;
-                rob_pc_commit <= rob_pc[rob_head];
-                rob_op_commit <= rob_op[rob_head];
-                rob_op_type_commit <= rob_op_type[rob_head];
-                rob_result_out <= rob_result[rob_head];
+                rob_commit          <= `TRUE;
+                rob_pc_commit       <= rob_pc[rob_head];
+                rob_op_commit       <= rob_op[rob_head];
+                rob_op_type_commit  <= rob_op_type[rob_head];
+                rob_result_out      <= rob_result[rob_head];
+                rob_entry_commit    <= rob_entry[rob_head];
+                rob_des_commit      <= rob_des[rob_head];
+                rob_pc_result_commit  <= rob_pc_result[rob_head];
+
                 rob_ready[rob_head] <= `FALSE;
                 rob_head <= rob_head + 1;
                 if(rob_op_type[rob_head] == `SType) is_storing <= `TRUE;
