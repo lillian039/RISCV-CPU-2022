@@ -83,10 +83,12 @@ module load_store_buffer
     wire    [4:0]   cur_lsb_empty   = lsb_rear;
     wire            is_empty = lsb_head == lsb_rear;
 
-   // wire    [`ENTRY_NULL]   debug_Qj = Qj[lsb_head];
-   // wire    [`ENTRY_NULL]   debug_Qk = Qk[lsb_head];
+    wire    [`ENTRY_RANGE]   debug_Qj = Qj[lsb_head];
+    wire    [`ENTRY_RANGE]   debug_Qk = Qk[lsb_head];
     wire    [3:0]   debug_state = state[lsb_head];
     wire    [31:0]  debug_Vk_head = Vk[lsb_head];
+
+    wire    [6:0]  debug_lsb_head_instru = op[lsb_head];
 
     integer i;
 
@@ -168,11 +170,11 @@ module load_store_buffer
                 if(lsb_load_broadcast)begin
                     for(i = 0; i <= LSB_SIZE; i = i + 1)begin
                         if(state[i] == `Waiting)begin
-                            if(Qj[i] == load_result)begin
+                            if(Qj[i] == load_entry_out)begin
                                 Qj[i] <= `ENTRY_NULL;
                                 Vj[i] <= load_result;
                             end
-                            if(Qk[i] == load_result)begin
+                            if(Qk[i] == load_entry_out)begin
                                 Qk[i] <= `ENTRY_NULL;
                                 Vk[i] <= load_result;
                             end
@@ -196,12 +198,13 @@ module load_store_buffer
                     state[lsb_head] <= `Empty;
                     lsb_head    <= lsb_head + 1;
                 end
-                else if(finish_load)begin
+                
+                if(finish_load)begin
                     lsb_load           <= `FALSE;
                     lsb_load_broadcast <= `TRUE;
                     load_result        <= data_load;
-                    state[lsb_head] <= `Empty;
-                    load_entry_out     <= entry_in[lsb_head];
+                    state[lsb_head]    <= `Empty;
+                    load_entry_out     <= entry[lsb_head];
                     lsb_head           <= lsb_head + 1;
                 end
                 else begin
@@ -220,7 +223,10 @@ module load_store_buffer
                     else begin
                         state[lsb_head]         <= `WaitingStore;
                         lsb_store_broadcast     <= `TRUE;
+                        lsb_load_broadcast      <= `FALSE;
+                        lsb_load                <= `FALSE;
                         store_entry_out         <= entry[lsb_head];
+
                     end
                 end
                 else begin

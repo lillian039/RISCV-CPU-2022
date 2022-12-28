@@ -12,6 +12,8 @@ module memory_controller
     input   wire                    rst_in,// reset signal
     input   wire                    rdy_in,// ready signal, pause cpu when low
 
+    input   wire                    io_buffer_full,
+
     input   wire                    roll_back,
     
     //RAM
@@ -81,7 +83,7 @@ module memory_controller
 
     assign  is_idle = controller_is_idle;
     assign  rw_select = is_storing ?  1 : 0; // 0 read 1 write
-    assign  addr_in = addr_record;
+    assign  addr_in = is_storing ? addr_record - 1 : addr_record;
 
     assign  finished_load = load_finish;
     assign  get_load_data = load_data;
@@ -158,8 +160,8 @@ module memory_controller
                 if(load_finish == `TRUE)begin
                     load_finish <= `FALSE;
                 end
-                if(store_finish == `TRUE)begin
-                     store_finish <= `FALSE;
+                else if(store_finish == `TRUE)begin
+                    store_finish <= `FALSE;
                 end
                 else if(fetch_finish == `TRUE)begin
                     fetch_finish <= `FALSE;
@@ -171,7 +173,7 @@ module memory_controller
                 end
                 else begin
 
-                if(lsb_store == `TRUE )begin
+                if(lsb_store == `TRUE && (store_address[17:16] != 2'b11 || !io_buffer_full))begin
                     is_storing  <= `TRUE;
                     store_op    <= op_type_store;
                     addr_record  <= store_address;
@@ -182,7 +184,7 @@ module memory_controller
                     else if(op_type_store == `SB)   store_cnt <= 2'b00;//0
                 end
 
-                else if(lsb_load == `TRUE)begin
+                else if(lsb_load == `TRUE && (load_address[17:16] != 2'b11 || !io_buffer_full))begin
                     is_loading  <= `TRUE;
                     load_op     <= op_type_load;
                     addr_record   <= load_address;
@@ -194,7 +196,7 @@ module memory_controller
 
                 else if(fetch_start == `TRUE)begin
                     is_fetching <= `TRUE;
-                    addr_record <= pc[16:0];
+                    addr_record <= pc;
                     controller_is_idle <= `FALSE;
                     fetch_cnt <= 3'b100;//4
                     instruction_pc_out <= pc;
@@ -214,6 +216,7 @@ module memory_controller
                         load_data[31:24] <= ram_load_data;
                         is_loading <= `FALSE;
                         load_finish <= `TRUE;
+                        controller_is_idle <= `TRUE;
                     end
                     load_cnt <= load_cnt - 1; 
                     addr_record <= addr_record + 1;
@@ -238,7 +241,7 @@ module memory_controller
                     end
                     else begin
                         load_data[7:0] <= ram_load_data;
-                        if(load_op == `LBU) load_data[31:8] <= {32{ram_load_data[7]}};
+                        if(load_op == `LBU) load_data[31:8] <= {24{ram_load_data[7]}};
                         is_loading <= `FALSE;
                         load_finish <= `TRUE;
                         controller_is_idle <= `TRUE;
@@ -252,7 +255,7 @@ module memory_controller
                     else if(store_cnt == 2'b10) ram_store_data <= store_data[15:8];
                     else if(store_cnt == 2'b01) ram_store_data <= store_data[23:16];
                     else begin
-                    ram_store_data <= store_data[31:14];
+                    ram_store_data <= store_data[31:24];
                     is_storing <= `FALSE;
                     store_finish <= `TRUE;
                     controller_is_idle <= `TRUE;

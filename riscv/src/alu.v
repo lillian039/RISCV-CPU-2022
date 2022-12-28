@@ -6,7 +6,7 @@ module alu(
 
     input   wire                    new_calculate,
     input   wire    [31:0]          instruction,
-    input   wire    [5:0]           op,   
+    input   wire    [5:0]           op,  //64 
     input   wire    [31:0]          vj,
     input   wire    [31:0]          vk,
     input   wire    [31:0]          pc,
@@ -88,7 +88,7 @@ module alu(
             alu_result  = pc + 4;
             alu_pc_out  = vj + imm;
     end
-    `ANDI:  alu_result  = vj + imm;   
+    `ADDI:  alu_result  = vj + imm;   
     `SLTI:  alu_result  = ($signed(vj) < $signed(imm));
     `SLTIU: alu_result  = (vj < imm);
     `XORI:  alu_result  = (vj ^ imm);

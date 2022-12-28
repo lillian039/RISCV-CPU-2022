@@ -15,7 +15,6 @@ module instruction_queue(
     input   wire            rob_is_full,
     output  reg             ins_to_rob,   
 
-
     //RS
     input   wire            rs_is_full,
     output  reg             ins_to_rs,   

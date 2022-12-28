@@ -10,8 +10,7 @@ module decoder(
     output  reg     [2:0]       op_type
 );
     wire        [2:0]       func3 = op_in [14:12];
-    wire        [6:0]       func7 = op_in [11:7];
-    wire        [24:20]     shamp = op_in [24:0];
+    wire        [6:0]       func7 = op_in [31:25];
     wire        [6:0]       opcode = op_in[6:0];
 
     wire        [31:0]      immI = {{20{op_in[31]}}, op_in[31:20]};
@@ -27,7 +26,7 @@ module decoder(
         rs2 = {1'b0,op_in [24:20]};
         rd  = {1'b0,op_in [11:7]};   
 
-        if (opcode == 7'b0010011 || opcode == 7'b0000011 || opcode == 7'b1100111 ) 
+        if (opcode == 7'b0010011 || opcode == 7'b1100111 ) 
         begin
             op_type = `IType;
             rs2 = `NULL;
@@ -45,8 +44,8 @@ module decoder(
                 3'b111: op_out = `ANDI; 
                 3'b101: begin 
                     case (func7)
-                    6'b000000: op_out = `SRLI;
-                    6'b010000: op_out = `SRAI; 
+                    7'b0000000: op_out = `SRLI;
+                    7'b0010000: op_out = `SRAI; 
                     endcase
                 end
                 endcase
@@ -55,6 +54,7 @@ module decoder(
         end
         else if (opcode == `LOAD)begin
             op_type =  `ILoadType;
+            imm_out = immI;
             rs2 = `NULL;
             case (func3)
             3'b000: op_out = `LB;
@@ -112,8 +112,8 @@ module decoder(
             case (func3)
             3'b000:begin
                 case (func7)
-                6'b000000: op_out = `ADD;
-                6'b010000: op_out = `SUB;
+                7'b0000000: op_out = `ADD;
+                7'b0100000: op_out = `SUB;
                 endcase
             end
             3'b001: op_out = `SLL;
@@ -122,18 +122,13 @@ module decoder(
             3'b100: op_out = `XOR;
             3'b101: begin
                 case (func7)
-                6'b000000: op_out = `SRL;
-                6'b010000: op_out = `SRA;
+                7'b0000000: op_out = `SRL;
+                7'b0100000: op_out = `SRA;
                 endcase
             end
             3'b110: op_out = `OR;
             3'b111: op_out = `AND;
             endcase
-        end
-        else begin
-            rs1 = `NULL;
-            rs2 = `NULL;
-            rd  = `NULL;
         end
 
     end

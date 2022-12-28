@@ -40,22 +40,32 @@ module register
 
     integer i;
 
-    parameter REG_SIZE=32;
-
     assign Qj = rs1_in == `NULL ? `ENTRY_NULL : busy[rs1_in] ? reorder[rs1_in] : `ENTRY_NULL;
     assign Qk = rs2_in == `NULL ? `ENTRY_NULL : busy[rs2_in] ? reorder[rs2_in] : `ENTRY_NULL;
-    assign Vj = rs1_in == `NULL ? `ENTRY_NULL : busy[rs1_in] ? 31'd0           : value[rs1_in];
-    assign Vk = rs2_in == `NULL ? `ENTRY_NULL : busy[rs2_in] ? 31'd0           : value[rs2_in];
+    assign Vj = rs1_in == `NULL ?  0 : busy[rs1_in] ? 31'd0  : value[rs1_in];
+    assign Vk = rs2_in == `NULL ?  0 : busy[rs2_in] ? 31'd0  : value[rs2_in];
 
-    wire    [`ENTRY_RANGE]  debug_1_reorder = reorder[1];
+    wire    [`ENTRY_RANGE]  debug_0_reorder = reorder[0];
+    wire    [31:0]          debug_0_value = value[0];
+
     wire    [31:0]          debug_1_value = value[1];
 
-    wire   [`ENTRY_RANGE]  debug_2_reorder = reorder[2];
-    wire   [31:0]          debug_2_value   = value[2];
+    wire    [31:0]          debug_2_value = value[2];
+
+
+
+    wire   [`ENTRY_RANGE]  debug_11_reorder = reorder[11];
+    wire   [31:0]          debug_11_value   = value[11];
+
+    wire   [`ENTRY_RANGE]  debug_12_reorder = reorder[12];
+    wire   [31:0]          debug_12_value   = value[12];
+
+    wire   [`ENTRY_RANGE]  debug_13_reorder = reorder[13];
+    wire   [31:0]          debug_13_value   = value[13];
 
     always @ (posedge clk) begin
-        if(rst_in == `TRUE || roll_back == `TRUE)begin//清空
-            for(i = 0; i < REG_SIZE; i = i + 1)begin
+        if(rst_in == `TRUE)begin//清空
+            for(i = 0; i < REG_NUM; i = i + 1)begin
                 busy[i]     <= `FALSE;
                 reorder[i]  <= 0;
                 value[i]    <= 0;
@@ -64,16 +74,24 @@ module register
         else if(!rdy_in)begin//低信号 pause
 
         end
+        else if(roll_back == `TRUE)begin
+            for(i = 0; i < REG_NUM; i = i + 1)begin
+                busy[i]     <= `FALSE;
+                reorder[i]  <= 0;
+            end
+        end
 
         else begin
-        if (new_issue && rd_in != `NULL)begin
+        if (new_issue && rd_in != `NULL && rd_in != 0)begin
             reorder[rd_in] <= rob_new_entry;
             busy   [rd_in] <= `TRUE;
         end
-        if (rob_commit && rob_des != `NULL && reorder[rob_des] == rob_entry)begin
+        if (rob_commit && rob_des != `NULL && rob_des != 0 )begin
             value[rob_des] <= rob_result;
-            busy [rob_des] <= `FALSE;
-            reorder [rob_des] <= `ENTRY_NULL;
+            if(reorder[rob_des] == rob_entry)begin
+                busy [rob_des] <= `FALSE;
+                reorder [rob_des] <= `ENTRY_NULL;
+            end
         end
         end
     end

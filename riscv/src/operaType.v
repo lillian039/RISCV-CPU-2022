@@ -66,7 +66,7 @@
 `define     ILoadType           3'b110
 
 //for record whether Qj Qk has value
-`define     ENTRY_RANGE         5:0  //32 0:4
+`define     ENTRY_RANGE         5:0  //32 0:4 64 5:0
 `define     ENTRY_NULL          6'd32
 `define     NULL                6'd32
 

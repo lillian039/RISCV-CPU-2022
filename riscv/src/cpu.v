@@ -112,6 +112,7 @@ module cpu(
       .clk_in               (clk_in),
       .rst_in               (rst_in),
       .rdy_in               (rdy_in),
+      .io_buffer_full       (io_buffer_full),
 
       .roll_back            (roll_back),
 
@@ -299,7 +300,7 @@ module cpu(
       .Qk_in                (Qk),
 
       .imm_in               (imm_decoder),
-      .op_type_in           (op_decoder),
+      .op_in           (op_decoder),
       .rd_in                (rd_decoder),
 
       .is_full_out          (rs_is_full),

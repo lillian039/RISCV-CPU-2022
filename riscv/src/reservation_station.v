@@ -25,7 +25,7 @@ module reservation_station
      
     //decoder    
     input   wire    [31:0]          imm_in,
-    input   wire    [5:0]           op_type_in,
+    input   wire    [5:0]           op_in,
     input   wire    [5:0]           rd_in,
      
     output  wire                    is_full_out,
@@ -70,11 +70,15 @@ module reservation_station
     reg     [31:0]                  rs_pc   [RS_SIZE-1:0];
     reg     [5:0]                   op      [RS_SIZE-1:0];
 
+    reg                             ready   [RS_SIZE-1:0];
+
   //  reg     [RS_SIZE-1:0]           rs_empty; //1 empty 0 full
   //  reg     [RS_SIZE-1:0]           rs_ready; //1 ready 0 no
 
-    reg     [`ENTRY_RANGE]          cur_rs_empty;
-    reg     [`ENTRY_RANGE]          cur_rs_ready;
+    wire     [`ENTRY_RANGE]          cur_rs_empty;
+    wire     [`ENTRY_RANGE]          cur_rs_ready;
+
+    reg      debug_rs;
 
     assign  is_full_out  = cur_rs_empty == `ENTRY_NULL;
 
@@ -98,6 +102,8 @@ module reservation_station
                 entry[i] <= 0;
                 rs_pc[i] <= 0;
                 op[i] <= 0;
+
+                ready[i]<=0;
             end
 
             new_calculate <= 0;
@@ -119,7 +125,7 @@ module reservation_station
         begin 
         if (get_instruction)begin
             entry   [cur_rs_empty] <= entry_in;
-            op      [cur_rs_empty] <= op_type_in;
+            op      [cur_rs_empty] <= op_in;
             rs_pc   [cur_rs_empty] <= pc_now_in;
             Qj      [cur_rs_empty] <= Qj_in;
             Qk      [cur_rs_empty] <= Qk_in;
@@ -128,12 +134,16 @@ module reservation_station
             Vk      [cur_rs_empty] <= Vk_in;
             state   [cur_rs_empty] <= `Waiting;
             inst    [cur_rs_empty] <= instruction_in;
+
+            ready[i] <= 0;
         end
 
         //update ready
         for(i = 0; i < RS_SIZE; i = i + 1)begin
             if(state[i] == `Waiting && Qj[i] == `ENTRY_NULL && Qk[i] == `ENTRY_NULL)
             state[i] <= `Ready;
+            
+            ready[i] <= 1;
         end
 
         //broadcast part
@@ -171,6 +181,10 @@ module reservation_station
        if (cur_rs_ready != `ENTRY_NULL)begin // find waiting
             new_calculate   <= `TRUE;
             rs_op_out   <= op       [cur_rs_ready];
+            if(op[cur_rs_ready] == 6'd25)begin
+                debug_rs <= `TRUE;
+            end
+            else debug_rs <= `FALSE;
             rs_instruct_out <= inst [cur_rs_ready];
             rs_vj_out   <= Vj       [cur_rs_ready];
             rs_vk_out   <= Vk       [cur_rs_ready];
@@ -178,22 +192,92 @@ module reservation_station
             rs_pc_out   <= rs_pc    [cur_rs_ready];
             rs_entry_out <= entry   [cur_rs_ready];
             state[cur_rs_ready] <= `Empty;
+
+            ready[cur_rs_ready] <= 0;
         end
         else new_calculate <= `FALSE;
         end
 
     end
 
-    integer j, k;
-    always @(*)begin
-        cur_rs_empty = `ENTRY_NULL;
-        for(j = 0; j < 6'd32; j = j + 1)begin
-            if(state[j] == `Empty)cur_rs_empty = j;
-        end
+    // integer j, k;
+    // always @(*)begin
+    //     cur_rs_empty = `ENTRY_NULL;
+    //     for(j = 0; j < 6'd32; j = j + 1)begin
+    //         if(state[j] == `Empty)cur_rs_empty = j;
+    //     end
 
-        cur_rs_ready = `ENTRY_NULL;
-        for(k=0; k < 6'd32; k = k + 1)begin
-            if(state[k] == `Ready)cur_rs_ready = k;
-        end
-    end
+    //     cur_rs_ready = `ENTRY_NULL;
+    //     for(k = 0; k < 6'd32; k = k + 1)begin
+    //         if(state[k] == `Ready)cur_rs_ready = k;
+    //     end
+    // end
+
+    assign cur_rs_empty = ~state[ 0] ?  0 :
+                             ~state[ 1] ?  1 :
+                             ~state[ 2] ?  2 :
+                             ~state[ 3] ?  3 :
+                             ~state[ 4] ?  4 :
+                             ~state[ 5] ?  5 :
+                             ~state[ 6] ?  6 :
+                             ~state[ 7] ?  7 :
+                             ~state[ 8] ?  8 :
+                             ~state[ 9] ?  9 :
+                             ~state[10] ? 10 :
+                             ~state[11] ? 11 :
+                             ~state[12] ? 12 :
+                             ~state[13] ? 13 :
+                             ~state[14] ? 14 :
+                             ~state[15] ? 15 :
+                             ~state[16] ? 16 :
+                             ~state[17] ? 17 :
+                             ~state[18] ? 18 :
+                             ~state[19] ? 19 :
+                             ~state[20] ? 20 :
+                             ~state[21] ? 21 :
+                             ~state[22] ? 22 :
+                             ~state[23] ? 23 :
+                             ~state[24] ? 24 :
+                             ~state[25] ? 25 :
+                             ~state[26] ? 26 :
+                             ~state[27] ? 27 :
+                             ~state[28] ? 28 :
+                             ~state[29] ? 29 :
+                             ~state[30] ? 30 :
+                             ~state[31] ? 31 :
+                             `ENTRY_NULL;
+
+    assign cur_rs_ready = ready[ 0] ?  0 :
+                        ready[ 1] ?  1 :
+                        ready[ 2] ?  2 :
+                        ready[ 3] ?  3 :
+                        ready[ 4] ?  4 :
+                        ready[ 5] ?  5 :
+                        ready[ 6] ?  6 :
+                        ready[ 7] ?  7 :
+                        ready[ 8] ?  8 :
+                        ready[ 9] ?  9 :
+                        ready[10] ? 10 :
+                        ready[11] ? 11 :
+                        ready[12] ? 12 :
+                        ready[13] ? 13 :
+                        ready[14] ? 14 :
+                        ready[15] ? 15 :
+                        ready[16] ? 16 :
+                        ready[17] ? 17 :
+                        ready[18] ? 18 :
+                        ready[19] ? 19 :
+                        ready[20] ? 20 :
+                        ready[21] ? 21 :
+                        ready[22] ? 22 :
+                        ready[23] ? 23 :
+                        ready[24] ? 24 :
+                        ready[25] ? 25 :
+                        ready[26] ? 26 :
+                        ready[27] ? 27 :
+                        ready[28] ? 28 :
+                        ready[29] ? 29 :
+                        ready[30] ? 30 :
+                        ready[31] ? 31 :
+                        `ENTRY_NULL;
     endmodule

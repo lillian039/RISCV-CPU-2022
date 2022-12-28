@@ -41,8 +41,8 @@ module branch_target_buffer(
     assign      pc_out = pc;
 
     integer             i;
-    wire                hash_idx_pc = (pc * prime) % BTBSIZE;
-    wire                hash_idx_rob = (rob_pc_commit * prime) % BTBSIZE;
+    wire     [5:0]     hash_idx_pc = (pc * prime) % BTBSIZE;
+    wire     [5:0]     hash_idx_rob = (rob_pc_commit * prime) % BTBSIZE;
 
     always @(posedge clk_in) begin
         if (rst_in)begin//清空btb
@@ -59,6 +59,7 @@ module branch_target_buffer(
         else if(roll_back)begin
             stop_fetching <= `FALSE;
         end 
+        
         begin
         if(fetch_new_instruction)begin
             if(op_in == `JAL)begin
@@ -66,7 +67,6 @@ module branch_target_buffer(
             end
             else if(op_in == `JALR)begin
                 stop_fetching <= `TRUE;
-                pc <= rob_pc_result;
             end
             else if(op_type == `BType)begin
                 if (btb[hash_idx_pc] == `weaklyTaken || btb[hash_idx_pc] == `stronglyTaken) pc <= pc + imm;
@@ -93,7 +93,7 @@ module branch_target_buffer(
                 else begin
                     if(rob_result == `FALSE) begin
                         roll_back <= `TRUE;
-                        pc <= rob_pc_result;
+                        pc <= rob_pc_commit + 4;
                     end
                     else roll_back <= `FALSE;
                 end

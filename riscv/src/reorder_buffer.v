@@ -147,7 +147,7 @@ module reorder_buffer(
             end
             if(finish_store)is_storing <= `FALSE;
 
-            //broadcast
+            //load broadcast
             if(lsb_broadcast)begin
               for(i = rob_head; i != rob_rear; i = i + 1)begin
                   if(rob_entry[i] == lsb_entry) begin
