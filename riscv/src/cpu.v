@@ -330,10 +330,6 @@ module cpu(
     );    
 
     alu rs_alu(
-      .clk_in               (clk_in),
-      .rst_in               (rst_in),
-      .rdy_in               (rdy_in),
-
       .new_calculate        (rs_new_calculate),
       .instruction          (rs_instruct_out),
       .op                   (rs_op_out),

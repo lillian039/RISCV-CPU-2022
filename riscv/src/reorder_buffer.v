@@ -86,7 +86,7 @@ module reorder_buffer(
             rob_rear <= 0;
 
             rob_instruction[i] <= 0;
-            rob_entry[i]  <= 0;
+            rob_entry[i]  <= `NULL;
             rob_ready[i]  <= 0;
             rob_result[i] <= 0;
             rob_des[i]    <= 0;
@@ -139,6 +139,8 @@ module reorder_buffer(
                 rob_pc_result_commit  <= rob_pc_result[rob_head];
 
                 rob_ready[rob_head] <= `FALSE;
+                rob_entry[rob_head] <= `NULL;
+
                 rob_head <= rob_head + 1;
                 if(rob_op_type[rob_head] == `SType) is_storing <= `TRUE;
             end
@@ -149,7 +151,7 @@ module reorder_buffer(
 
             //load broadcast
             if(lsb_broadcast)begin
-              for(i = rob_head; i != rob_rear; i = i + 1)begin
+              for(i = 0; i < 32; i = i + 1)begin
                   if(rob_entry[i] == lsb_entry) begin
                     rob_ready[i] <= `TRUE;
                     rob_result[i] <= lsb_result;
@@ -158,7 +160,7 @@ module reorder_buffer(
             end
 
             if(lsb_store_addressed)begin
-              for(i = rob_head; i != rob_rear; i = i + 1)begin
+              for(i = 0; i < 32; i = i + 1)begin
                   if(rob_entry[i] == lsb_store_entry) begin
                     rob_ready[i] <= `TRUE;
                   end
@@ -166,7 +168,7 @@ module reorder_buffer(
             end
 
             if(rs_broadcast)begin
-              for(i = rob_head; i != rob_rear; i = i + 1)begin
+              for(i = 0; i < 32; i = i + 1)begin
                   if(rob_entry[i] == rs_entry) begin
                     rob_ready[i] <= `TRUE;
                     rob_result[i] <= rs_result;

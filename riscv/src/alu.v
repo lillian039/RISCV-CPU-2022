@@ -1,9 +1,5 @@
 `include "operaType.v"
 module alu(
-    input   wire                    clk_in,// system clock signal
-    input   wire                    rst_in,// reset signal
-    input   wire                    rdy_in,// ready signal, pause cpu when low
-
     input   wire                    new_calculate,
     input   wire    [31:0]          instruction,
     input   wire    [5:0]           op,  //64 
