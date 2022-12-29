@@ -20,7 +20,7 @@ module memory_controller
     output  wire                    rw_select,
     output  reg    [7:0]            ram_store_data,
     input   wire   [7:0]            ram_load_data,
-    output  wire   [`ADDR_RANGE]    addr_in,
+    output  reg    [`ADDR_RANGE]    addr_in,
 
     //lsb
     input   wire                    lsb_load,
@@ -82,8 +82,7 @@ module memory_controller
 
 
     assign  is_idle = controller_is_idle;
-    assign  rw_select = is_storing ?  1 : 0; // 0 read 1 write
-    assign  addr_in = is_storing ? addr_record - 1 : addr_record;
+    assign  rw_select = is_storing ? 1 : store_finish ? 1 : 0; // 0 read 1 write
 
     assign  finished_load = load_finish;
     assign  get_load_data = load_data;
@@ -144,6 +143,7 @@ module memory_controller
             fetch_finish <= 0;
 
             addr_record <= 0;
+            addr_in <= 0;
 
             load_data <= 0;
             load_op <= 0;
@@ -176,7 +176,8 @@ module memory_controller
                 if(lsb_store == `TRUE && (store_address[17:16] != 2'b11 || !io_buffer_full))begin
                     is_storing  <= `TRUE;
                     store_op    <= op_type_store;
-                    addr_record  <= store_address;
+                    addr_in <= store_address;
+                    addr_record <= store_address;
                     controller_is_idle <= `FALSE;
                     store_data <= get_store_data;
                     if(op_type_store == `SW)        store_cnt <= 2'b11;//3
@@ -187,8 +188,8 @@ module memory_controller
                 else if(lsb_load == `TRUE && (load_address[17:16] != 2'b11 || !io_buffer_full))begin
                     is_loading  <= `TRUE;
                     load_op     <= op_type_load;
-                    addr_record   <= load_address;
                     controller_is_idle <= `FALSE;
+                    addr_in <= load_address;
                     if(op_type_load == `LW) load_cnt <= 3'b100;//4
                     else if(op_type_load == `LH || op_type_load == `LHU) load_cnt <= 3'b010;//2
                     else if(op_type_load == `LB || op_type_load == `LBU) load_cnt <= 3'b001;//1
@@ -196,8 +197,8 @@ module memory_controller
 
                 else if(fetch_start == `TRUE)begin
                     is_fetching <= `TRUE;
-                    addr_record <= pc;
                     controller_is_idle <= `FALSE;
+                    addr_in <= pc;
                     fetch_cnt <= 3'b100;//4
                     instruction_pc_out <= pc;
                 end
@@ -219,7 +220,7 @@ module memory_controller
                         controller_is_idle <= `TRUE;
                     end
                     load_cnt <= load_cnt - 1; 
-                    addr_record <= addr_record + 1;
+                    addr_in <= addr_in + 1;
                 end
                 else if(load_op == `LH || load_op == `LHU)begin
                     if(load_cnt == 3'b010)begin load_data <= 0; end
@@ -231,8 +232,8 @@ module memory_controller
                         load_finish <= `TRUE;
                         controller_is_idle <= `TRUE;
                 end
-                load_cnt <= load_cnt - 1;
-                addr_record <= addr_record + 1;
+                    load_cnt <= load_cnt - 1;
+                    addr_in <= addr_in + 1;
                 end
                 else if(load_op == `LB || load_op == `LBU)begin
                     if(load_cnt == 3'b001)begin 
@@ -246,6 +247,7 @@ module memory_controller
                         load_finish <= `TRUE;
                         controller_is_idle <= `TRUE;
                     end
+                    addr_in <= addr_in + 1;
                 end
             end
 
@@ -260,6 +262,7 @@ module memory_controller
                     store_finish <= `TRUE;
                     controller_is_idle <= `TRUE;
                 end
+                addr_in <= addr_record;
                 addr_record <= addr_record + 1;
                 store_cnt <= store_cnt - 1;
                 end
@@ -271,14 +274,17 @@ module memory_controller
                     store_finish <= `TRUE;
                     controller_is_idle <= `TRUE;
                 end
+                addr_in <= addr_record;
                 addr_record <= addr_record + 1;
                 store_cnt <= store_cnt - 1;
                 end
                 else if(store_op == `SB)begin
                     ram_store_data <= store_data[7:0];
+                    addr_in <= addr_record;
                     is_storing <= `FALSE;
                     store_finish <= `TRUE;
                     controller_is_idle <= `TRUE;
+                    addr_record <= addr_record + 1;
                 end
             end
             
@@ -294,7 +300,7 @@ module memory_controller
                     controller_is_idle <= `TRUE;
                 end
                 fetch_cnt <= fetch_cnt - 1; 
-                addr_record <= addr_record + 1;
+                addr_in <= addr_in + 1;
             end
             else if(is_fetching && icache_hit == `TRUE)begin
                 fetch_instruct <= icache_hit_inst;
