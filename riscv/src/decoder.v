@@ -11,7 +11,7 @@ module decoder(
 );
     wire        [2:0]       func3 = op_in [14:12];
     wire        [6:0]       func7 = op_in [31:25];
-    wire        [6:0]       opcode = op_in[6:0];
+    reg         [6:0]       opcode;
 
     wire        [31:0]      immI = {{20{op_in[31]}}, op_in[31:20]};
     wire        [31:0]      immS = {{20{op_in[31]}}, op_in[31:25], op_in[11:7]};
@@ -24,9 +24,12 @@ module decoder(
 
         rs1 = {1'b0,op_in [19:15]};
         rs2 = {1'b0,op_in [24:20]};
-        rd  = {1'b0,op_in [11:7]};   
+        rd  = {1'b0,op_in [11:7]};
 
-        if (opcode == 7'b0010011 || opcode == 7'b1100111 ) 
+        opcode = op_in[6:0];
+
+        case(opcode)
+        7'b0010011,7'b1100111: 
         begin
             op_type = `IType;
             rs2 = `NULL;
@@ -52,7 +55,7 @@ module decoder(
             end
             endcase
         end
-        else if (opcode == `LOAD)begin
+        `LOAD: begin
             op_type =  `ILoadType;
             imm_out = immI;
             rs2 = `NULL;
@@ -64,7 +67,7 @@ module decoder(
             3'b101: op_out = `LHU;
             endcase
         end
-        else if (opcode == 7'b0100011) 
+        7'b0100011: 
         begin
             op_type = `SType;
             rd = `NULL;
@@ -75,7 +78,7 @@ module decoder(
             3'b010: op_out = `SW; 
             endcase
         end
-        else if (opcode == 7'b1100011)
+        7'b1100011:
         begin
             op_type = `BType;
             imm_out = immB;
@@ -89,7 +92,7 @@ module decoder(
             3'b111: begin op_out = `BGEU; end
             endcase
         end
-        else if (opcode == 7'b0110111 || opcode == 7'b0010111)begin
+        7'b0110111, 7'b0010111:begin
             op_type = `UType;
             rs2 = `NULL;
             imm_out = immU;
@@ -98,14 +101,14 @@ module decoder(
             7'b0010111: begin op_out = `AUIPC; end
             endcase
         end
-        else if (opcode == 7'b1101111)
+        7'b1101111:
         begin
             op_type = `JType;
             rs2 = `NULL;
             imm_out = immJ;
             op_out =  `JAL;
         end
-        else if(opcode == 7'b0110011)
+        7'b0110011:
         begin
             op_type = `RType;
             imm_out = 32'b0;
@@ -130,6 +133,12 @@ module decoder(
             3'b111: op_out = `AND;
             endcase
         end
+        default: begin
+            rs1 = `NULL;
+            rs2 = `NULL;
+            rd = `NULL;
+        end
+        endcase
 
     end
 endmodule

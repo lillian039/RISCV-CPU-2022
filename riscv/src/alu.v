@@ -27,6 +27,7 @@ module alu(
     assign alu_entry = entry;
 
     always @(*) begin
+   // $display("alu");
     case (op)
     //B format
     `BEQ:   
@@ -111,6 +112,9 @@ module alu(
     //U format
     `LUI: alu_result  = imm;
     `AUIPC: alu_result  = imm + pc;
+    default:begin
+        $display("!!!");
+    end
     endcase
     end
   

@@ -33,7 +33,6 @@ module branch_target_buffer(
 
 );
     parameter           BTBSIZE = 64;
-    parameter           prime   = 337;
 
     reg         [1:0]   btb  [BTBSIZE-1:0];
     reg         [31:0]  pc;
@@ -41,8 +40,8 @@ module branch_target_buffer(
     assign      pc_out = pc;
 
     integer             i;
-    wire     [5:0]     hash_idx_pc = (pc * prime) % BTBSIZE;
-    wire     [5:0]     hash_idx_rob = (rob_pc_commit * prime) % BTBSIZE;
+    wire     [5:0]     hash_idx_pc  = pc[5:0];
+    wire     [5:0]     hash_idx_rob = rob_pc_commit[5:0];
 
     always @(posedge clk_in) begin
         if (rst_in)begin//清空btb
@@ -98,7 +97,7 @@ module branch_target_buffer(
                     else roll_back <= `FALSE;
                 end
                 if(rob_result == `TRUE  && btb[hash_idx_rob] < 2'b11) btb[hash_idx_rob] <= btb[hash_idx_rob] + 1;
-                if(rob_result == `FALSE && btb[hash_idx_rob] > 2'b00) btb[hash_idx_rob] <= btb[hash_idx_rob] - 1;
+                else if(rob_result == `FALSE && btb[hash_idx_rob] > 2'b00) btb[hash_idx_rob] <= btb[hash_idx_rob] - 1;
             end
         end
         else roll_back <= `FALSE;
