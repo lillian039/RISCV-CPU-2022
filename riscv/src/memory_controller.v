@@ -17,7 +17,7 @@ module memory_controller
     input   wire                    roll_back,
     
     //RAM
-    output  wire                    rw_select,
+    output  reg                     rw_select, // 1 write 0 read
     output  reg    [7:0]            ram_store_data,
     input   wire   [7:0]            ram_load_data,
     output  reg    [`ADDR_RANGE]    addr_in,
@@ -82,7 +82,7 @@ module memory_controller
 
 
     assign  is_idle = controller_is_idle;
-    assign  rw_select = is_storing ? 1 : store_finish ? 1 : 0; // 0 read 1 write
+    //assign  rw_select = is_storing ? 1 : store_finish ? 1 : 0; // 0 read 1 write
 
     assign  finished_load = load_finish;
     assign  get_load_data = load_data;
@@ -119,6 +119,8 @@ module memory_controller
             fetch_instruct <= 0;
 
             controller_is_idle <= `TRUE;
+
+            rw_select <= 0;
 
             for(i = 0; i < 128; i = i + 1)begin
                 icache_tags[i] <= 0;
@@ -162,6 +164,7 @@ module memory_controller
                 end
                 else if(store_finish == `TRUE)begin
                     store_finish <= `FALSE;
+                    rw_select <= 0;
                 end
                 else if(fetch_finish == `TRUE)begin
                     fetch_finish <= `FALSE;
@@ -176,7 +179,7 @@ module memory_controller
                 if(lsb_store == `TRUE && (store_address[17:16] != 2'b11 || !io_buffer_full))begin
                     is_storing  <= `TRUE;
                     store_op    <= op_type_store;
-                    addr_in <= store_address;
+                   // addr_in <= store_address;
                     addr_record <= store_address;
                     controller_is_idle <= `FALSE;
                     store_data <= get_store_data;
@@ -252,6 +255,7 @@ module memory_controller
             end
 
             if(is_storing == `TRUE)begin
+                rw_select <= 1;
                 if(store_op == `SW)begin
                     if(store_cnt == 2'b11) ram_store_data <= store_data[7:0];
                     else if(store_cnt == 2'b10) ram_store_data <= store_data[15:8];
