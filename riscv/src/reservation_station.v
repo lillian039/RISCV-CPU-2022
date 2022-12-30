@@ -70,6 +70,41 @@ module reservation_station
     reg     [31:0]                  rs_pc   [RS_SIZE-1:0];
     reg     [5:0]                   op      [RS_SIZE-1:0];
 
+    wire     [31:0]            debug_state_0 = state[0];
+    wire     [`ENTRY_RANGE]    debug_Qj_0 = Qj[0];
+    wire     [`ENTRY_RANGE]    debug_Qk_0 = Qk[0];
+
+    wire     [31:0]            debug_state_1 = state[1];
+    wire     [`ENTRY_RANGE]    debug_Qj_1 = Qj[1];
+    wire     [`ENTRY_RANGE]    debug_Qk_1 = Qk[1];
+
+    wire     [31:0]            debug_state_2 = state[2];
+    wire     [`ENTRY_RANGE]    debug_Qj_2 = Qj[2];
+    wire     [`ENTRY_RANGE]    debug_Qk_2 = Qk[2];
+
+    wire     [31:0]            debug_state_3 = state[3];
+    wire     [`ENTRY_RANGE]    debug_Qj_3 = Qj[3];
+    wire     [`ENTRY_RANGE]    debug_Qk_3 = Qk[3];
+
+    wire     [31:0]            debug_state_4 = state[4];
+    wire     [`ENTRY_RANGE]    debug_Qj_4 = Qj[4];
+    wire     [`ENTRY_RANGE]    debug_Qk_4 = Qk[4];
+
+    wire     [31:0]            debug_state_5 = state[5];
+    wire     [`ENTRY_RANGE]    debug_Qj_5 = Qj[5];
+    wire     [`ENTRY_RANGE]    debug_Qk_5 = Qk[5];
+
+    wire     [31:0]            debug_state_6 = state[6];
+    wire     [`ENTRY_RANGE]    debug_Qj_6 = Qj[6];
+    wire     [`ENTRY_RANGE]    debug_Qk_6 = Qk[6];
+
+    wire     [31:0]            debug_state_7 = state[7];
+    wire     [`ENTRY_RANGE]    debug_Qj_7 = Qj[7];
+    wire     [`ENTRY_RANGE]    debug_Qk_7 = Qk[7];
+
+
+
+
   //  reg     [RS_SIZE-1:0]           rs_empty; //1 empty 0 full
   //  reg     [RS_SIZE-1:0]           rs_ready; //1 ready 0 no
 
@@ -121,13 +156,41 @@ module reservation_station
             entry   [cur_rs_empty] <= entry_in;
             op      [cur_rs_empty] <= op_in;
             rs_pc   [cur_rs_empty] <= pc_now_in;
-            Qj      [cur_rs_empty] <= Qj_in;
-            Qk      [cur_rs_empty] <= Qk_in;
             A       [cur_rs_empty] <= imm_in;
-            Vj      [cur_rs_empty] <= Vj_in;
-            Vk      [cur_rs_empty] <= Vk_in;
             state   [cur_rs_empty] <= `Waiting;
             inst    [cur_rs_empty] <= instruction_in;
+
+            if(instruction_in == 32'hfed79ae3)begin
+                if(alu_broadcast && (alu_entry == Qj_in || alu_entry == Qk_in) || lsb_broadcast && (lsb_entry == Qj_in || lsb_entry == Qk_in))$display("...");
+                $display("%08x %08x",Qj_in,Qk_in);
+            end
+
+            if(alu_broadcast && alu_entry == Qj_in)begin
+                Qj[cur_rs_empty] <= `ENTRY_NULL;
+                Vj[cur_rs_empty] <= alu_value;
+            end
+            else if(lsb_broadcast && lsb_entry == Qj_in)begin
+                Qj[cur_rs_empty] <= `ENTRY_NULL;
+                Vj[cur_rs_empty] <= lsb_value;
+            end
+            else begin
+                Qj[cur_rs_empty] <= Qj_in;
+                Vj[cur_rs_empty] <= Vj_in;
+            end
+
+            if(alu_broadcast && alu_entry == Qk_in)begin
+                Qk[cur_rs_empty] <= `ENTRY_NULL;
+                Vk[cur_rs_empty] <= alu_value;
+            end
+            else if(lsb_broadcast && lsb_entry == Qk_in)begin
+                Qk[cur_rs_empty] <= `ENTRY_NULL;
+                Vk[cur_rs_empty] <= lsb_value;
+            end
+            else begin
+                Qk[cur_rs_empty] <= Qk_in;
+                Vk[cur_rs_empty] <= Vk_in;
+            end
+
         end
 
         //update ready
@@ -136,6 +199,20 @@ module reservation_station
             state[i] <= `Ready;
         end
 
+
+
+        for(i = 0; i < RS_SIZE; i = i + 1)begin
+             if (state[i] == `Waiting)begin
+                 if (Qj[i] == alu_entry) begin
+                     Qj[i] <= `ENTRY_NULL;
+                     Vj[i] <= alu_value;
+                 end
+                 if (Qk[i] == alu_entry) begin
+                     Qk[i] <= `ENTRY_NULL;
+                     Vk[i] <= alu_value;
+                 end
+             end
+             end
         //broadcast part
         if (alu_broadcast) begin
             for(i = 0; i < RS_SIZE; i = i + 1)begin
@@ -153,6 +230,7 @@ module reservation_station
         end
 
         if(lsb_broadcast) begin
+        
             for(i = 0; i < RS_SIZE; i = i + 1)begin
                 if (state[i] == `Waiting)begin
                     if (Qj[i] == lsb_entry) begin
@@ -171,6 +249,10 @@ module reservation_station
        if (cur_rs_ready != `ENTRY_NULL)begin // find waiting
             new_calculate   <= `TRUE;
             rs_op_out   <= op       [cur_rs_ready];
+            if(entry[cur_rs_ready] == `ENTRY_NULL)begin
+                $display("bbb");
+                $display("broadcast: %08x",entry[cur_rs_ready]);
+            end
             rs_instruct_out <= inst [cur_rs_ready];
             rs_vj_out   <= Vj       [cur_rs_ready];
             rs_vk_out   <= Vk       [cur_rs_ready];
@@ -188,12 +270,12 @@ module reservation_station
     always @(*)begin
        // $display("rs: %d\n",clk_in);
         cur_rs_empty = `ENTRY_NULL;
-        for(j = 0; j < 6'd32; j = j + 1)begin
+        for(j = 0; j < RS_SIZE; j = j + 1)begin
             if(state[j] == `Empty)cur_rs_empty = j;
         end
 
         cur_rs_ready = `ENTRY_NULL;
-        for(k = 0; k < 6'd32; k = k + 1)begin
+        for(k = 0; k < RS_SIZE; k = k + 1)begin
             if(state[k] == `Ready)cur_rs_ready = k;
         end
     end

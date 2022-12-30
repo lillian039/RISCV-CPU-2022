@@ -201,6 +201,14 @@ module cpu(
       .rob_des              (rob_des_commit),
       .rob_result           (rob_result),
 
+      .rs_broadcast         (rs_broadcast),
+      .rs_entry             (rs_entry),
+      .rs_result            (rs_value),
+
+      .lsb_broadcast        (lsb_load_broadcast),
+      .lsb_entry            (lsb_load_entry_out),
+      .lsb_result           (lsb_load_result),
+
       .rob_new_entry        (rob_new_entry),
       .new_issue            (ins_to_rob),
 

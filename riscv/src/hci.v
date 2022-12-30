@@ -250,6 +250,7 @@ always @*
               d_wr_en   = 1'b1;
             end
             $write("%c", io_din);
+           // $display(" %08x",io_din);
           end
           3'd04: begin      // 0x30004 write: indicates program stop
             if (!tx_full) begin

@@ -69,12 +69,19 @@ module reorder_buffer(
     reg             is_storing;
 
     assign rob_is_full = rob_head == rob_rear + 1;
+    wire   rob_is_empty = rob_head == rob_rear;
     assign cur_entry = rob_rear;
     
     assign rob_head_out = rob_head;
     assign rob_rear_out = rob_rear;
 
-    wire  [31:0] debug_rob_head_instruction = rob_instruction[rob_head];
+    wire  [31:0]          debug_rob_head_instruction = rob_instruction[rob_head];
+    wire  [`ENTRY_RANGE]  debug_entry_out = rob_entry [rob_head];
+    wire                  debug_ready_out = rob_ready [rob_head];
+
+    wire  [`ENTRY_RANGE]  debug_entry_7 = rob_entry[7];
+    wire  [31:0]          debug_instruct_7 = rob_instruction[7];
+    wire                  debug_ready_7 = rob_ready [7];
 
 
     integer  i;
@@ -118,7 +125,6 @@ module reorder_buffer(
             if(get_instruction == `TRUE)begin
               rob_instruction[rob_rear] <= isq_ins_in;//存入空的rob
               rob_entry [rob_rear] <= rob_rear;
-              rob_ready [rob_rear] <= 0;
               rob_des   [rob_rear] <= rd_in;
               rob_pc    [rob_rear] <= isq_pc_in;
               rob_op    [rob_rear] <= op_in;
@@ -127,8 +133,9 @@ module reorder_buffer(
               rob_rear            <= rob_rear + 1;
             end
 
+
             //commit part
-            if(!is_storing && rob_ready[rob_head])begin
+            if(!rob_is_empty && !is_storing && rob_ready[rob_head])begin
                 rob_commit          <= `TRUE;
                 rob_pc_commit       <= rob_pc[rob_head];
                 rob_op_commit       <= rob_op[rob_head];
@@ -140,10 +147,10 @@ module reorder_buffer(
 
                 rob_ready[rob_head] <= `FALSE;
                 rob_entry[rob_head] <= `NULL;
-
-              //  $display("%08x",rob_instruction[rob_head]);
-
                 rob_head <= rob_head + 1;
+
+                $display("%08x",rob_instruction[rob_head]);
+
                 if(rob_op_type[rob_head] == `SType) is_storing <= `TRUE;
             end
             else begin
@@ -154,6 +161,7 @@ module reorder_buffer(
             //load broadcast
             if(lsb_broadcast)begin
               for(i = 0; i < 32; i = i + 1)begin
+                $display("lsb load:",lsb_store_entry);
                   if(rob_entry[i] == lsb_entry) begin
                     rob_ready[i] <= `TRUE;
                     rob_result[i] <= lsb_result;
@@ -162,6 +170,7 @@ module reorder_buffer(
             end
 
             if(lsb_store_addressed)begin
+              $display("lsb store:",lsb_store_entry);
               for(i = 0; i < 32; i = i + 1)begin
                   if(rob_entry[i] == lsb_store_entry) begin
                     rob_ready[i] <= `TRUE;
@@ -170,6 +179,7 @@ module reorder_buffer(
             end
 
             if(rs_broadcast)begin
+              $display("rs:",rs_entry);
               for(i = 0; i < 32; i = i + 1)begin
                   if(rob_entry[i] == rs_entry) begin
                     rob_ready[i] <= `TRUE;

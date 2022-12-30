@@ -134,12 +134,35 @@ module load_store_buffer
         else begin 
             //issue
             if (get_instruction && (op_type_in == `SType || op_type_in == `ILoadType))begin
+                if(rs_broadcast && rs_entry == Qj_in)begin
+                    Qj[cur_lsb_empty] <= `ENTRY_NULL;
+                    Vj[cur_lsb_empty] <= rs_value;
+                end
+                else if(lsb_load_broadcast && load_entry_out == Qj_in)begin
+                    Qj[cur_lsb_empty] <= `ENTRY_NULL;
+                    Vj[cur_lsb_empty] <= load_result;
+                end
+                else begin
+                    Qj[cur_lsb_empty] <= Qj_in;
+                    Vj[cur_lsb_empty] <= Vj_in;
+
+                end
+
+                if(rs_broadcast && rs_entry == Qk_in)begin
+                    Qk[cur_lsb_empty] <= `ENTRY_NULL;
+                    Vk[cur_lsb_empty] <= rs_value;
+                end
+                else if(lsb_load_broadcast && load_entry_out == Qk_in)begin
+                    Qk[cur_lsb_empty] <= `ENTRY_NULL;
+                    Vk[cur_lsb_empty] <= load_result;
+                end
+                else begin
+                    Qk[cur_lsb_empty] <= Qk_in;
+                    Vk[cur_lsb_empty] <= Vk_in;
+                end
+
                 entry       [cur_lsb_empty] <= entry_in;
-                Qj          [cur_lsb_empty] <= Qj_in;
-                Qk          [cur_lsb_empty] <= Qk_in;
                 A           [cur_lsb_empty] <= imm_in;
-                Vj          [cur_lsb_empty] <= Vj_in;
-                Vk          [cur_lsb_empty] <= Vk_in;
                 op_type     [cur_lsb_empty] <= op_type_in;
                 op          [cur_lsb_empty] <= op_in;
                 state       [cur_lsb_empty] <= `Waiting;
@@ -232,6 +255,10 @@ module load_store_buffer
                 else begin
                     lsb_store_broadcast <= `FALSE;
                 end
+        end
+        else begin
+             lsb_store_broadcast <= `FALSE;
+             lsb_load_broadcast <= `FALSE;
         end
         end
     end

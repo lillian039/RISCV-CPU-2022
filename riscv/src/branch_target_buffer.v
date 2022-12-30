@@ -57,9 +57,10 @@ module branch_target_buffer(
 
         else if(roll_back)begin
             stop_fetching <= `FALSE;
+            roll_back <= `FALSE;
         end 
-        
-        begin
+
+        else begin
         if(fetch_new_instruction)begin
             if(op_in == `JAL)begin
                 pc <= pc + imm;

@@ -18,6 +18,16 @@ module register
     input   wire    [`ENTRY_RANGE]      rob_des,
     input   wire    [31:0]              rob_result,
 
+    //rs broadcast
+    input   wire                        rs_broadcast,
+    input   wire    [`ENTRY_RANGE]      rs_entry,
+    input   wire    [31:0]              rs_result,
+
+    //lsb broadcast
+    input   wire                        lsb_broadcast,
+    input   wire    [`ENTRY_RANGE]      lsb_entry,
+    input   wire    [31:0]              lsb_result,
+
     //issue part
     input   wire    [`ENTRY_RANGE]      rob_new_entry,
     input   wire                        new_issue,
@@ -63,6 +73,9 @@ module register
     wire   [`ENTRY_RANGE]  debug_13_reorder = reorder[13];
     wire   [31:0]          debug_13_value   = value[13];
 
+    wire   [`ENTRY_RANGE]  debug_15_reorder = reorder[15];
+    wire   [31:0]          debug_15_value   = value[15];
+
     always @ (posedge clk) begin
         if(rst_in == `TRUE)begin//清空
             for(i = 0; i < REG_NUM; i = i + 1)begin
@@ -91,6 +104,26 @@ module register
             if(reorder[rob_des] == rob_entry)begin
                 busy [rob_des] <= `FALSE;
                 reorder [rob_des] <= `ENTRY_NULL;
+            end
+        end
+
+        if(rs_broadcast)begin
+            for (i = 0; i < 32; i = i + 1)begin
+                if(reorder[i] == rs_broadcast && busy[i])begin
+                    busy[i] <= `FALSE;
+                    reorder [i] <= `ENTRY_NULL;
+                    value[i] <= rs_result;
+                end
+            end
+        end
+
+        if(lsb_broadcast)begin
+            for (i = 0; i < 32; i = i + 1)begin
+                if(reorder[i] == lsb_broadcast && busy[i])begin
+                    busy[i] <= `FALSE;
+                    reorder [i] <= `ENTRY_NULL;
+                    value[i] <= lsb_result;
+                end
             end
         end
         end
