@@ -1,3 +1,7 @@
 riscv/testspace/
 riscv/testcase/
 riscv/test/
+riscv/
+serial/
+note/
+build/
