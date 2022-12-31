@@ -45,6 +45,8 @@ module memory_controller
     output  wire                    is_idle
 );
 
+    parameter CACHE_SIZE = 256;
+
     reg     [1:0]           store_cnt;
     reg     [2:0]           load_cnt;
     reg     [2:0]           fetch_cnt;
@@ -75,8 +77,8 @@ module memory_controller
     wire    [31:0]          icache_hit_inst;
     
     //index pc[7:0]
-    assign  icache_hit = icache_valid[pc[6:0]] && icache_tags[pc[6:0]] == pc[16:0];
-    assign  icache_hit_inst = icache_inst[pc[6:0]];
+    assign  icache_hit = icache_valid[pc[7:0]] && icache_tags[pc[7:0]] == pc[16:0];
+    assign  icache_hit_inst = icache_inst[pc[7:0]];
 
     reg     controller_is_idle;
 
@@ -125,7 +127,7 @@ module memory_controller
 
             rw_select <= 0;
 
-            for(i = 0; i < 128; i = i + 1)begin
+            for(i = 0; i < CACHE_SIZE; i = i + 1)begin
                 icache_tags[i] <= 0;
                 icache_valid[i] <= 0;
                 icache_inst[i] <= 0;

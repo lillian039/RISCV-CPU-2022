@@ -156,11 +156,7 @@ module reorder_buffer(
                 rob_ready[rob_head] <= `FALSE;
                 rob_entry[rob_head] <= `NULL;
 
-                // if(rob_head == rob_rear + 1 && get_instruction)begin
-                //   $display("???");
-                // end
-
-                //$fdisplay(logfile,"%08x",rob_instruction[rob_head]);
+              //  $fdisplay(logfile,"%08x",rob_instruction[rob_head]);
 
                 if(rob_op_type[rob_head] == `SType) is_storing <= `TRUE;
                 else   rob_head <= rob_head + 1;

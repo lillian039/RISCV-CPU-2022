@@ -35,6 +35,9 @@ module branch_target_buffer(
     parameter           BTBSIZE = 64;
 
     reg         [1:0]   btb  [BTBSIZE-1:0];
+
+    reg         [31:0]  sum;
+    reg         [31:0]  wrong;
     reg         [31:0]  pc;
 
     assign      pc_out = pc;
@@ -50,6 +53,8 @@ module branch_target_buffer(
         end
             pc <= 0;
             stop_fetching <= `FALSE;
+            sum <= 0;
+            wrong <= 0;
         end
 
         else if(!rdy_in)begin//低信号或没有需要判断的jump  pause
@@ -69,6 +74,7 @@ module branch_target_buffer(
                 stop_fetching <= `TRUE;
             end
             else if(op_type == `BType)begin
+                sum <= sum + 1;
                 if (btb[hash_idx_pc] == `weaklyTaken || btb[hash_idx_pc] == `stronglyTaken) pc <= pc + imm;
                 else pc <= pc + 4;
             end
@@ -86,6 +92,7 @@ module branch_target_buffer(
                 if(btb[hash_idx_rob] == `weaklyNotTaken || btb[hash_idx_rob] == `stronglyNotTaken )begin
                     if(rob_result == `TRUE) begin
                         roll_back <= `TRUE;
+                        wrong <= wrong + 1;
                         pc <= rob_pc_result;
                     end
                     else roll_back <= `FALSE;
@@ -93,9 +100,12 @@ module branch_target_buffer(
                 else begin
                     if(rob_result == `FALSE) begin
                         roll_back <= `TRUE;
+                        wrong <= wrong + 1;
                         pc <= rob_pc_commit + 4;
                     end
-                    else roll_back <= `FALSE;
+                    else begin
+                        roll_back <= `FALSE;
+                    end
                 end
                 if(rob_result == `TRUE  && btb[hash_idx_rob] < 2'b11) btb[hash_idx_rob] <= btb[hash_idx_rob] + 1;
                 else if(rob_result == `FALSE && btb[hash_idx_rob] > 2'b00) btb[hash_idx_rob] <= btb[hash_idx_rob] - 1;
