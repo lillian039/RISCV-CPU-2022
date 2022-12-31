@@ -79,7 +79,9 @@ module load_store_buffer
     reg     [4:0]               lsb_rear;
 
 
-    assign          is_full_out     = lsb_head == lsb_rear + 1;
+    wire    [4:0]   full_flag = lsb_rear + 1;
+
+    assign          is_full_out     = lsb_head == full_flag;
     wire    [4:0]   cur_lsb_empty   = lsb_rear;
     wire            is_empty = lsb_head == lsb_rear;
 
@@ -91,6 +93,10 @@ module load_store_buffer
     wire    [6:0]  debug_lsb_head_instru = op[lsb_head];
 
     integer i;
+    // integer logfile;
+    // initial begin
+    //     logfile = $fopen("lsb.log","w");
+    // end
 
     always @(posedge clk_in ) begin
         if(rst_in || roll_back)begin//清空
@@ -161,6 +167,14 @@ module load_store_buffer
                     Vk[cur_lsb_empty] <= Vk_in;
                 end
 
+                // if(instruction_in == 32'h00042703)begin
+                //     $fdisplay(logfile,"!!!clk: %d Qj:%08x Vj:%08x",$realtime,Qj_in,Vj_in);
+                // end
+                
+                // if(instruction_in == 32'h00442783)begin
+                //     $fdisplay(logfile,"...clk: %d Qj:%08x Vj:%08x",$realtime,Qj_in,Vj_in);
+                // end
+
                 entry       [cur_lsb_empty] <= entry_in;
                 A           [cur_lsb_empty] <= imm_in;
                 op_type     [cur_lsb_empty] <= op_type_in;
@@ -176,7 +190,7 @@ module load_store_buffer
                 end
                 //update by broadcast
                 if(rs_broadcast)begin
-                    for(i = 0; i <= LSB_SIZE; i = i + 1)begin
+                    for(i = 0; i < LSB_SIZE; i = i + 1)begin
                         if(state[i] == `Waiting)begin
                             if(Qj[i] == rs_entry)begin
                                 Qj[i] <= `ENTRY_NULL;
@@ -191,7 +205,7 @@ module load_store_buffer
                 end
 
                 if(lsb_load_broadcast)begin
-                    for(i = 0; i <= LSB_SIZE; i = i + 1)begin
+                    for(i = 0; i < LSB_SIZE; i = i + 1)begin
                         if(state[i] == `Waiting)begin
                             if(Qj[i] == load_entry_out)begin
                                 Qj[i] <= `ENTRY_NULL;
@@ -213,6 +227,19 @@ module load_store_buffer
                         store_address   <= Vj[lsb_head] + A[lsb_head];
                         data_store      <= Vk[lsb_head];
                         op_type_store   <= op[lsb_head];
+                    end
+
+                    for(i = 0; i < LSB_SIZE; i = i + 1)begin
+                        if(state[i] == `Waiting)begin
+                            if(Qj[i] == rob_entry_commit)begin
+                                Qj[i] <= `ENTRY_NULL;
+                                Vj[i] <= rob_result_out;
+                            end
+                            if(Qk[i] == rob_entry_commit)begin
+                                Qk[i] <= `ENTRY_NULL;
+                                Vk[i] <= rob_result_out;
+                            end
+                        end
                     end
                 end
 
@@ -242,6 +269,7 @@ module load_store_buffer
                         lsb_load               <= `TRUE;
                         op_type_load           <= op[lsb_head];
                         load_address           <= Vj[lsb_head] + A[lsb_head];
+                     //   $fdisplay(logfile,"clk: %d Vj: %08x",$realtime,Vj[lsb_head]);
                     end
                     else begin
                         state[lsb_head]         <= `WaitingStore;

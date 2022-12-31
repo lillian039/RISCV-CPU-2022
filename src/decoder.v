@@ -80,6 +80,9 @@ module decoder(
         end
         7'b1100011:
         begin
+            if(op_in == 32'h00b72623)begin
+                $display("???");
+            end
             op_type = `BType;
             imm_out = immB;
             rd = `NULL;

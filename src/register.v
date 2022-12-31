@@ -70,17 +70,16 @@ module register
     wire   [`ENTRY_RANGE]  debug_12_reorder = reorder[12];
     wire   [31:0]          debug_12_value   = value[12];
 
-    wire   [`ENTRY_RANGE]  debug_13_reorder = reorder[13];
-    wire   [31:0]          debug_13_value   = value[13];
-
-    wire   [`ENTRY_RANGE]  debug_15_reorder = reorder[15];
-    wire   [31:0]          debug_15_value   = value[15];
+    // integer logfile;
+    // initial begin
+    //     logfile = $fopen("reg.log","w");
+    // end
 
     always @ (posedge clk) begin
         if(rst_in == `TRUE)begin//清空
             for(i = 0; i < REG_NUM; i = i + 1)begin
                 busy[i]     <= `FALSE;
-                reorder[i]  <= 0;
+                reorder[i]  <= `ENTRY_NULL;
                 value[i]    <= 0;
             end
         end
@@ -90,16 +89,27 @@ module register
         else if(roll_back == `TRUE)begin
             for(i = 0; i < REG_NUM; i = i + 1)begin
                 busy[i]     <= `FALSE;
-                reorder[i]  <= 0;
+                reorder[i]  <= `ENTRY_NULL;
             end
         end
 
         else begin
         if (new_issue && rd_in != `NULL && rd_in != 0)begin
+            // if(rob_new_entry == 32'h0000001d)begin
+            //     $fdisplay(logfile,"clk: %d!!!",$realtime);
+            // end
             reorder[rd_in] <= rob_new_entry;
             busy   [rd_in] <= `TRUE;
         end
+
+        //  if(rob_commit)begin
+        //      $fdisplay(logfile,"clk: %d reorder[8]: %08x reg[8]: %08x reg[14]: %08x reg[15]: %08x ",$realtime,reorder[8],value[8],value[14],value[15]);
+        //  end
+
         if (rob_commit && rob_des != `NULL && rob_des != 0 )begin
+            // if(rob_result == 32'h000015d0 && rob_des == 8)begin
+            //     $fdisplay(logfile,"clk:%d rob!! rob_entry:%08x",$realtime,rob_entry);
+            // end
             value[rob_des] <= rob_result;
             if(reorder[rob_des] == rob_entry)begin
                 busy [rob_des] <= `FALSE;
@@ -109,9 +119,17 @@ module register
 
         if(rs_broadcast)begin
             for (i = 0; i < 32; i = i + 1)begin
-                if(reorder[i] == rs_broadcast && busy[i])begin
-                    busy[i] <= `FALSE;
-                    reorder [i] <= `ENTRY_NULL;
+                if(reorder[i] == rs_entry && busy[i])begin
+                    if(!new_issue)begin 
+                        reorder [i] <= `ENTRY_NULL;
+                        busy[i] <= `FALSE;
+                    end
+                    
+                    else if(new_issue && rd_in!=`NULL && rd_in != 0 && rd_in != i)begin
+                        reorder [i] <= `ENTRY_NULL;
+                        busy[i] <= `FALSE;
+                    end
+            
                     value[i] <= rs_result;
                 end
             end
@@ -119,9 +137,17 @@ module register
 
         if(lsb_broadcast)begin
             for (i = 0; i < 32; i = i + 1)begin
-                if(reorder[i] == lsb_broadcast && busy[i])begin
-                    busy[i] <= `FALSE;
-                    reorder [i] <= `ENTRY_NULL;
+                if(reorder[i] == lsb_entry && busy[i])begin
+                    if(!new_issue)begin 
+                        reorder [i] <= `ENTRY_NULL;
+                        busy[i] <= `FALSE;
+                    end
+
+                    else if(new_issue && rd_in!=`NULL && rd_in != 0 && rd_in != i)begin
+                        reorder [i] <= `ENTRY_NULL;
+                        busy[i] <= `FALSE;
+                    end
+
                     value[i] <= lsb_result;
                 end
             end

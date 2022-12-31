@@ -107,9 +107,13 @@ module alu(
     `AND:   alu_result  = (vj & vk);
     //U format
     `LUI: alu_result  = imm;
-    `AUIPC: alu_result  = imm + pc;
+    `AUIPC: 
+    begin 
+        alu_result  = imm + pc;
+        alu_pc_out = imm + pc;
+    end
     default:begin
-        $display("!!!");
+        $display("!!! clk: %d op: %08x",$realtime,op);
     end
     endcase
     end

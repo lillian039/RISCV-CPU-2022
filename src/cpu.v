@@ -331,6 +331,10 @@ module cpu(
       .alu_value            (alu_value),
       .alu_pc_out           (alu_pc_out),
 
+      .rob_commit           (rob_commit),
+      .rob_entry            (rob_entry_commit),
+      .rob_result           (rob_result),
+
       .rs_broadcast         (rs_broadcast),
       .rs_entry             (rs_entry),
       .rs_result            (rs_value),

@@ -67,8 +67,10 @@ module reorder_buffer(
     reg   [4:0]     rob_rear;                           //指向rob的尾
 
     reg             is_storing;
+    
+    wire    [4:0] full_flag = rob_rear + 1;
 
-    assign rob_is_full = rob_head == rob_rear + 1;
+    assign rob_is_full = rob_head == full_flag ;
     wire   rob_is_empty = rob_head == rob_rear;
     assign cur_entry = rob_rear;
     
@@ -85,6 +87,12 @@ module reorder_buffer(
 
 
     integer  i;
+
+    // integer logfile;
+    // initial begin
+    //     logfile = $fopen("rob.log","w");
+    // end
+
 
       always @(posedge clk_in) begin
         if(rst_in || roll_back)begin//清空rob
@@ -123,14 +131,14 @@ module reorder_buffer(
         else begin 
             //issue part
             if(get_instruction == `TRUE)begin
-              rob_instruction[rob_rear] <= isq_ins_in;//存入空的rob
-              rob_entry [rob_rear] <= rob_rear;
-              rob_des   [rob_rear] <= rd_in;
-              rob_pc    [rob_rear] <= isq_pc_in;
-              rob_op    [rob_rear] <= op_in;
-              rob_op_type [rob_rear] <= op_type_in;
-              rob_ready [rob_rear] <= `FALSE;
-              rob_rear            <= rob_rear + 1;
+              rob_instruction [rob_rear] <= isq_ins_in;//存入空的rob
+              rob_entry       [rob_rear] <= rob_rear;
+              rob_des         [rob_rear] <= rd_in;
+              rob_pc          [rob_rear] <= isq_pc_in;
+              rob_op          [rob_rear] <= op_in;
+              rob_op_type     [rob_rear] <= op_type_in;
+              rob_ready       [rob_rear] <= `FALSE;
+              rob_rear                   <= rob_rear + 1;
             end
 
 
@@ -147,21 +155,29 @@ module reorder_buffer(
 
                 rob_ready[rob_head] <= `FALSE;
                 rob_entry[rob_head] <= `NULL;
-                rob_head <= rob_head + 1;
 
-                $display("%08x",rob_instruction[rob_head]);
+                // if(rob_head == rob_rear + 1 && get_instruction)begin
+                //   $display("???");
+                // end
+
+                //$fdisplay(logfile,"%08x",rob_instruction[rob_head]);
 
                 if(rob_op_type[rob_head] == `SType) is_storing <= `TRUE;
+                else   rob_head <= rob_head + 1;
+
             end
             else begin
               rob_commit <= `FALSE;
             end
-            if(finish_store)is_storing <= `FALSE;
+            if(finish_store)begin
+              is_storing <= `FALSE;
+              rob_head <= rob_head + 1;
+            end
 
             //load broadcast
             if(lsb_broadcast)begin
               for(i = 0; i < 32; i = i + 1)begin
-                $display("lsb load:",lsb_store_entry);
+             //   $display("lsb load:",lsb_store_entry);
                   if(rob_entry[i] == lsb_entry) begin
                     rob_ready[i] <= `TRUE;
                     rob_result[i] <= lsb_result;
@@ -170,7 +186,7 @@ module reorder_buffer(
             end
 
             if(lsb_store_addressed)begin
-              $display("lsb store:",lsb_store_entry);
+             // $display("lsb store:",lsb_store_entry);
               for(i = 0; i < 32; i = i + 1)begin
                   if(rob_entry[i] == lsb_store_entry) begin
                     rob_ready[i] <= `TRUE;
@@ -179,7 +195,7 @@ module reorder_buffer(
             end
 
             if(rs_broadcast)begin
-              $display("rs:",rs_entry);
+            //  $display("rs:",rs_entry);
               for(i = 0; i < 32; i = i + 1)begin
                   if(rob_entry[i] == rs_entry) begin
                     rob_ready[i] <= `TRUE;

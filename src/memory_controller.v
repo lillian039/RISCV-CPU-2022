@@ -82,7 +82,6 @@ module memory_controller
 
 
     assign  is_idle = controller_is_idle;
-    //assign  rw_select = is_storing ? 1 : store_finish ? 1 : 0; // 0 read 1 write
 
     assign  finished_load = load_finish;
     assign  get_load_data = load_data;
@@ -93,6 +92,10 @@ module memory_controller
     assign  instruction_out = fetch_instruct;
 
     integer i;
+    // integer logfile;
+    // initial begin
+    //     logfile = $fopen("mem.log","w");
+    // end
 
     always @(posedge clk_in)  begin
         if(rst_in)begin//清空
@@ -156,7 +159,10 @@ module memory_controller
             fetch_instruct <= 0;
 
             controller_is_idle <= `TRUE;
+
+            rw_select <= 0;
         end
+
         else begin
             if(is_idle)begin
                 if(load_finish == `TRUE)begin
@@ -176,7 +182,7 @@ module memory_controller
                 end
                 else begin
 
-                if(lsb_store == `TRUE && (store_address[17:16] != 2'b11 || !io_buffer_full))begin
+                if(lsb_store == `TRUE)begin
                     is_storing  <= `TRUE;
                     store_op    <= op_type_store;
                    // addr_in <= store_address;
@@ -188,7 +194,7 @@ module memory_controller
                     else if(op_type_store == `SB)   store_cnt <= 2'b00;//0
                 end
 
-                else if(lsb_load == `TRUE && (load_address[17:16] != 2'b11 || !io_buffer_full))begin
+                else if(lsb_load == `TRUE)begin
                     is_loading  <= `TRUE;
                     load_op     <= op_type_load;
                     controller_is_idle <= `FALSE;
@@ -211,6 +217,7 @@ module memory_controller
 
             else begin
             if(is_loading == `TRUE)begin
+              //  $fdisplay(logfile,"load: time:%d addr: %08x ",$realtime,addr_in);
                 if(load_op == `LW)begin
                 if(load_cnt == 3'b100)begin  end
                     else if(load_cnt == 3'b011) load_data[7:0] <= ram_load_data;
@@ -257,18 +264,21 @@ module memory_controller
             if(is_storing == `TRUE)begin
                 rw_select <= 1;
                 if(store_op == `SW)begin
-                    if(store_cnt == 2'b11) ram_store_data <= store_data[7:0];
+                    if(store_cnt == 2'b11) begin
+                        ram_store_data <= store_data[7:0];
+                       // $fdisplay(logfile,"sw: clk: %d addr: %08x data: %08x",$realtime,addr_record,store_data);
+                    end
                     else if(store_cnt == 2'b10) ram_store_data <= store_data[15:8];
                     else if(store_cnt == 2'b01) ram_store_data <= store_data[23:16];
                     else begin
-                    ram_store_data <= store_data[31:24];
-                    is_storing <= `FALSE;
-                    store_finish <= `TRUE;
-                    controller_is_idle <= `TRUE;
-                end
-                addr_in <= addr_record;
-                addr_record <= addr_record + 1;
-                store_cnt <= store_cnt - 1;
+                        ram_store_data <= store_data[31:24];
+                        is_storing <= `FALSE;
+                        store_finish <= `TRUE;
+                        controller_is_idle <= `TRUE;
+                    end
+                    addr_in <= addr_record;
+                    addr_record <= addr_record + 1;
+                    store_cnt <= store_cnt - 1;
                 end
                 else if(store_op == `SH)begin
                     if(store_cnt == 2'b01) ram_store_data <= store_data[7:0];
@@ -283,12 +293,12 @@ module memory_controller
                 store_cnt <= store_cnt - 1;
                 end
                 else if(store_op == `SB)begin
+                 //   $fdisplay(logfile,"sb: clk: %d addr: %08x data: %08x",$realtime,addr_record,store_data);
                     ram_store_data <= store_data[7:0];
                     addr_in <= addr_record;
                     is_storing <= `FALSE;
                     store_finish <= `TRUE;
                     controller_is_idle <= `TRUE;
-                    addr_record <= addr_record + 1;
                 end
             end
             
