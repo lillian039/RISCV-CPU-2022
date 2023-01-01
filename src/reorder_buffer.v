@@ -84,10 +84,6 @@ module reorder_buffer(
     wire  [`ENTRY_RANGE]  debug_entry_out = rob_entry [rob_head];
     wire                  debug_ready_out = rob_ready [rob_head];
 
-    // wire  [`ENTRY_RANGE]  debug_entry_7 = rob_entry[7];
-    // wire  [31:0]          debug_instruct_7 = rob_instruction[7];
-    // wire                  debug_ready_7 = rob_ready [7];
-
 
     integer  i;
 
@@ -149,8 +145,6 @@ module reorder_buffer(
             end
 
         
-          //  if(rob_commit && rob_op_commit == 6'd15) $fdisplay(logfile,"clk: %d",$realtime);
-
             //commit part
             if(!rob_is_empty && !is_storing && rob_ready[rob_head])begin
                 rob_commit          <= `TRUE;
@@ -162,7 +156,7 @@ module reorder_buffer(
                 rob_des_commit      <= rob_des[rob_head];
                 rob_pc_result_commit  <= rob_pc_result[rob_head];
 
-               // $fdisplay(logfile,"clk:%d %08x",$realtime,rob_pc[rob_head]);
+               //$fdisplay(logfile,"%08x",rob_pc[rob_head]);
 
                 rob_ready[rob_head] <= `FALSE;
                 rob_entry[rob_head] <= `NULL;

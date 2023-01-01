@@ -149,6 +149,10 @@ module reservation_station
                 Qj[cur_rs_empty] <= `ENTRY_NULL;
                 Vj[cur_rs_empty] <= lsb_value;
             end
+            else if(rob_commit && rob_entry == Qj_in)begin
+                Qj[cur_rs_empty] <= `ENTRY_NULL;
+                Vj[cur_rs_empty] <= rob_result;
+            end
             else begin
                 Qj[cur_rs_empty] <= Qj_in;
                 Vj[cur_rs_empty] <= Vj_in;
@@ -161,6 +165,10 @@ module reservation_station
             else if(lsb_broadcast && lsb_entry == Qk_in)begin
                 Qk[cur_rs_empty] <= `ENTRY_NULL;
                 Vk[cur_rs_empty] <= lsb_value;
+            end
+            else if(rob_commit && rob_entry == Qk_in)begin
+                Qk[cur_rs_empty] <= `ENTRY_NULL;
+                Vk[cur_rs_empty] <= rob_result;
             end
             else begin
                 Qk[cur_rs_empty] <= Qk_in;

@@ -151,6 +151,10 @@ module load_store_buffer
                     Qj[cur_lsb_empty] <= `ENTRY_NULL;
                     Vj[cur_lsb_empty] <= load_result;
                 end
+                else if(rob_commit && rob_entry_commit == Qj_in)begin
+                    Qj[cur_lsb_empty] <= `ENTRY_NULL;
+                    Vj[cur_lsb_empty] <= rob_result_out;
+                end
                 else begin
                     Qj[cur_lsb_empty] <= Qj_in;
                     Vj[cur_lsb_empty] <= Vj_in;
@@ -164,6 +168,10 @@ module load_store_buffer
                 else if(lsb_load_broadcast && load_entry_out == Qk_in)begin
                     Qk[cur_lsb_empty] <= `ENTRY_NULL;
                     Vk[cur_lsb_empty] <= load_result;
+                end
+                else if(rob_commit && rob_entry_commit == Qk_in)begin
+                    Qk[cur_lsb_empty] <= `ENTRY_NULL;
+                    Vk[cur_lsb_empty] <= rob_result_out;
                 end
                 else begin
                     Qk[cur_lsb_empty] <= Qk_in;
