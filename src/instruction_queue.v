@@ -10,6 +10,7 @@ module instruction_queue(
     input   wire            instruction_ready,  //whether icache/mem get the instruction
     input   wire    [31:0]  instruction_in,     // 32 width instruction
     input   wire    [31:0]  pc_in,
+    input   wire            pc_predict_in,
 
     //ROB
     input   wire            rob_is_full,
@@ -25,6 +26,7 @@ module instruction_queue(
 
     output  wire    [31:0]  instruction_out,
     output  wire    [31:0]  ins_pc_out,
+    output  wire            pc_predict_out,
 
     //decoder
     input   wire    [2:0]   op_type_in,   
@@ -35,6 +37,7 @@ module instruction_queue(
     reg     [31:0]  instruction_isq     [31:0]; //size 32
     reg     [31:0]  pc_isq              [31:0];
     reg     [2:0]   op_type_isq         [31:0];
+    reg             pc_predict          [31:0];
 
     reg     [4:0]   isq_head;                   //q_head 0-31
     reg     [4:0]   isq_rear;                   //q_rear 0-31
@@ -47,6 +50,7 @@ module instruction_queue(
     assign  is_full         = isq_head == full_flag;
     assign  instruction_out = instruction_isq[isq_head];
     assign  ins_pc_out      = pc_isq[isq_head];
+    assign  pc_predict_out  = pc_predict[isq_head];
 
 
     integer i;
@@ -64,6 +68,7 @@ module instruction_queue(
                 instruction_isq[i] <= 32'b0;
                 pc_isq[i] <= 32'b0;
                 op_type_isq[i] <= 32'b0;
+                pc_predict[i] <= 0;
             end
         end
         else if(!rdy_in)begin//低信号 pause
@@ -75,6 +80,7 @@ module instruction_queue(
                 instruction_isq [isq_rear] <= instruction_in;
                 pc_isq          [isq_rear] <= pc_in;
                 op_type_isq     [isq_rear] <= op_type_in;
+                pc_predict      [isq_rear] <= pc_predict_in;
                 isq_rear <= isq_rear + 1;
             end
             

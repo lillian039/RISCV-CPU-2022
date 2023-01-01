@@ -38,13 +38,13 @@ module IF(
     //isq
     output  wire    [31:0]              instruction_out, // get instruction in isq
     output  wire    [31:0]              isq_pc_out,
+    output  wire                        isq_pc_predict,
 
-    //btb
-    output  wire                        roll_back_out
+    //rob
+    input  wire                         roll_back_in
 );
     wire                isq_is_full;
-
-    wire                roll_back;
+    wire                pc_predict;
     wire                isq_hault;
 
     //decoder
@@ -56,7 +56,6 @@ module IF(
     wire     [2:0]       op_type;
 
     assign      fetch_start = !isq_is_full && !isq_hault;
-    assign      roll_back_out = roll_back;
 
     //decode instruction from ram and then put in in isq
     decoder isq_decoder(
@@ -75,11 +74,12 @@ module IF(
         .rst_in                 (rst_in),
         .rdy_in                 (rdy_in),
 
-        .roll_back              (roll_back),
+        .roll_back              (roll_back_in),
 
         .instruction_ready      (finish_fetch),
         .instruction_in         (instruction_in),
         .pc_in                  (instruction_pc_in),
+        .pc_predict_in          (pc_predict),
 
         .rob_is_full            (rob_is_full),
         .ins_to_rob             (ins_to_rob),
@@ -92,6 +92,7 @@ module IF(
 
         .instruction_out        (instruction_out),
         .ins_pc_out             (isq_pc_out),
+        .pc_predict_out         (isq_pc_predict),
 
         .op_type_in             (op_type),
         .is_full                (isq_is_full)       
@@ -109,6 +110,7 @@ module IF(
         .imm                    (imm),
 
         .pc_out                 (pc_out),
+        .pc_predict             (pc_predict),
 
         .rob_commit             (rob_commit),
         .rob_pc_commit          (rob_pc_commit),
@@ -116,7 +118,7 @@ module IF(
         .rob_op_type            (rob_op_type),
         .rob_result             (rob_result),
         .rob_pc_result          (rob_pc_result),
-        .roll_back              (roll_back),
+        .roll_back              (roll_back_in),
 
         .stop_fetching          (isq_hault)
     );

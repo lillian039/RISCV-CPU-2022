@@ -25,11 +25,11 @@ initial begin
   $finish;
 end
 
-initial begin
-    // $dumpfile("test.vcd");
-    // $dumpvars(0, testbench);
+// initial begin
+//     $dumpfile("test.vcd");
+//     $dumpvars(0, testbench);
      
-     #200000000 $finish;
-end
+//     #200000000 $finish;
+// end
 
 endmodule

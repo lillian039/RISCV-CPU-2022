@@ -90,6 +90,9 @@ module load_store_buffer
     wire    [3:0]   debug_state = state[lsb_head];
     wire    [31:0]  debug_Vk_head = Vk[lsb_head];
 
+    wire    [31:0]  debug_Vk_1 = Vk[1];
+    wire    [31:0]  debug_Vj_1 = Vj[1];
+
     wire    [6:0]  debug_lsb_head_instru = op[lsb_head];
 
     integer i;
@@ -166,15 +169,7 @@ module load_store_buffer
                     Qk[cur_lsb_empty] <= Qk_in;
                     Vk[cur_lsb_empty] <= Vk_in;
                 end
-
-                // if(instruction_in == 32'h00042703)begin
-                //     $fdisplay(logfile,"!!!clk: %d Qj:%08x Vj:%08x",$realtime,Qj_in,Vj_in);
-                // end
                 
-                // if(instruction_in == 32'h00442783)begin
-                //     $fdisplay(logfile,"...clk: %d Qj:%08x Vj:%08x",$realtime,Qj_in,Vj_in);
-                // end
-
                 entry       [cur_lsb_empty] <= entry_in;
                 A           [cur_lsb_empty] <= imm_in;
                 op_type     [cur_lsb_empty] <= op_type_in;
@@ -226,6 +221,7 @@ module load_store_buffer
                         lsb_store       <= `TRUE;
                         store_address   <= Vj[lsb_head] + A[lsb_head];
                         data_store      <= Vk[lsb_head];
+                       // $fdisplay(logfile,"clk:%d sb: %08x",$realtime,Vk[lsb_head]);
                         op_type_store   <= op[lsb_head];
                     end
 

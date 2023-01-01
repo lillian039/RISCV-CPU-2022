@@ -7,7 +7,8 @@ module reorder_buffer(
 
     output  wire                    rob_is_full,
     output  wire   [`ENTRY_RANGE]   cur_entry,
-    input   wire                    roll_back,
+
+    output  reg                     roll_back,
 
     //memory-controller
     input   wire                    finish_store,
@@ -16,6 +17,7 @@ module reorder_buffer(
     input   wire                    get_instruction,
     input   wire    [31:0]          isq_ins_in,
     input   wire    [31:0]          isq_pc_in,
+    input   wire                    isq_pc_predict,
     
     //decoder   
     input   wire    [5:0]           rd_in,
@@ -62,6 +64,7 @@ module reorder_buffer(
     reg   [2:0]     rob_op_type       [ROB_SIZE-1:0];
     reg   [31:0]    rob_pc            [ROB_SIZE-1:0];
     reg   [31:0]    rob_pc_result     [ROB_SIZE-1:0];
+    reg             rob_pc_predict    [ROB_SIZE-1:0];
 
     reg   [4:0]     rob_head;                           //指向rob的头
     reg   [4:0]     rob_rear;                           //指向rob的尾
@@ -81,9 +84,9 @@ module reorder_buffer(
     wire  [`ENTRY_RANGE]  debug_entry_out = rob_entry [rob_head];
     wire                  debug_ready_out = rob_ready [rob_head];
 
-    wire  [`ENTRY_RANGE]  debug_entry_7 = rob_entry[7];
-    wire  [31:0]          debug_instruct_7 = rob_instruction[7];
-    wire                  debug_ready_7 = rob_ready [7];
+    // wire  [`ENTRY_RANGE]  debug_entry_7 = rob_entry[7];
+    // wire  [31:0]          debug_instruct_7 = rob_instruction[7];
+    // wire                  debug_ready_7 = rob_ready [7];
 
 
     integer  i;
@@ -109,6 +112,7 @@ module reorder_buffer(
             rob_op_type[i]<= 0;
             rob_pc[i]     <= 0;
             rob_pc_result[i] <= 0;
+            rob_pc_predict[i] <= 0;
 
           end
           is_storing  <= 0;
@@ -121,6 +125,7 @@ module reorder_buffer(
           rob_entry_commit <= 0;
           rob_des_commit <= 0;
           rob_pc_result_commit <= 0;
+          roll_back <= 0;
 
         end
 
@@ -138,9 +143,13 @@ module reorder_buffer(
               rob_op          [rob_rear] <= op_in;
               rob_op_type     [rob_rear] <= op_type_in;
               rob_ready       [rob_rear] <= `FALSE;
+              rob_pc_predict  [rob_rear] <= isq_pc_predict;
+
               rob_rear                   <= rob_rear + 1;
             end
 
+        
+          //  if(rob_commit && rob_op_commit == 6'd15) $fdisplay(logfile,"clk: %d",$realtime);
 
             //commit part
             if(!rob_is_empty && !is_storing && rob_ready[rob_head])begin
@@ -153,18 +162,20 @@ module reorder_buffer(
                 rob_des_commit      <= rob_des[rob_head];
                 rob_pc_result_commit  <= rob_pc_result[rob_head];
 
+               // $fdisplay(logfile,"clk:%d %08x",$realtime,rob_pc[rob_head]);
+
                 rob_ready[rob_head] <= `FALSE;
                 rob_entry[rob_head] <= `NULL;
 
-              //  $fdisplay(logfile,"%08x",rob_instruction[rob_head]);
-
-                if(rob_op_type[rob_head] == `SType) is_storing <= `TRUE;
+                if(rob_op_type[rob_head] == `BType && rob_pc_predict[rob_head] != rob_result[rob_head])roll_back <= `TRUE;
+                else if(rob_op_type[rob_head] == `SType) is_storing <= `TRUE;
                 else   rob_head <= rob_head + 1;
 
             end
             else begin
               rob_commit <= `FALSE;
             end
+
             if(finish_store)begin
               is_storing <= `FALSE;
               rob_head <= rob_head + 1;

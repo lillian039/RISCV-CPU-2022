@@ -18,6 +18,7 @@ module branch_target_buffer(
 
     //pc reg
     output  wire    [31:0]  pc_out,
+    output  reg             pc_predict,
 
     //ROB
     input   wire            rob_commit,
@@ -26,13 +27,13 @@ module branch_target_buffer(
     input   wire    [2:0]   rob_op_type,
     input   wire    [31:0]  rob_result,
     input   wire    [31:0]  rob_pc_result,
-    output  reg             roll_back,
+    input   wire            roll_back,
 
     //fetch
     output  reg             stop_fetching//meet JALR     
 
 );
-    parameter           BTBSIZE = 64;
+    parameter           BTBSIZE = 128;
 
     reg         [1:0]   btb  [BTBSIZE-1:0];
 
@@ -43,8 +44,8 @@ module branch_target_buffer(
     assign      pc_out = pc;
 
     integer             i;
-    wire     [5:0]     hash_idx_pc  = pc[5:0];
-    wire     [5:0]     hash_idx_rob = rob_pc_commit[5:0];
+    wire     [6:0]     hash_idx_pc  = pc[6:0];
+    wire     [6:0]     hash_idx_rob = rob_pc_commit[6:0];
 
     always @(posedge clk_in) begin
         if (rst_in)begin//清空btb
@@ -55,6 +56,7 @@ module branch_target_buffer(
             stop_fetching <= `FALSE;
             sum <= 0;
             wrong <= 0;
+            pc_predict <= 0;
         end
 
         else if(!rdy_in)begin//低信号或没有需要判断的jump  pause
@@ -62,10 +64,13 @@ module branch_target_buffer(
 
         else if(roll_back)begin
             stop_fetching <= `FALSE;
-            roll_back <= `FALSE;
+            pc <= rob_pc_result;
+            if(rob_result == `TRUE  && btb[hash_idx_rob] < 2'b11) btb[hash_idx_rob] <= btb[hash_idx_rob] + 1;
+            else if(rob_result == `FALSE && btb[hash_idx_rob] > 2'b00) btb[hash_idx_rob] <= btb[hash_idx_rob] - 1;
         end 
 
         else begin
+
         if(fetch_new_instruction)begin
             if(op_in == `JAL)begin
                 pc <= pc + imm;
@@ -75,44 +80,37 @@ module branch_target_buffer(
             end
             else if(op_type == `BType)begin
                 sum <= sum + 1;
-                if (btb[hash_idx_pc] == `weaklyTaken || btb[hash_idx_pc] == `stronglyTaken) pc <= pc + imm;
-                else pc <= pc + 4;
+                if (btb[hash_idx_pc] == `weaklyTaken || btb[hash_idx_pc] == `stronglyTaken) begin
+                    pc <= pc + imm;
+                 //   pc_predict <= `TRUE;
+                end
+                else begin
+                    pc <= pc + 4;
+                   // pc_predict <= `FALSE;
+                end
             end
             else begin
                 pc <= pc + 4;
             end
         end
+
         if(rob_commit)begin
             if(rob_op_commit == `JALR)begin
                 stop_fetching <= `FALSE;
                 pc <= rob_pc_result;
-                roll_back <= `FALSE;
             end  
             else if(rob_op_type == `BType)begin
-                if(btb[hash_idx_rob] == `weaklyNotTaken || btb[hash_idx_rob] == `stronglyNotTaken )begin
-                    if(rob_result == `TRUE) begin
-                        roll_back <= `TRUE;
-                        wrong <= wrong + 1;
-                        pc <= rob_pc_result;
-                    end
-                    else roll_back <= `FALSE;
-                end
-                else begin
-                    if(rob_result == `FALSE) begin
-                        roll_back <= `TRUE;
-                        wrong <= wrong + 1;
-                        pc <= rob_pc_commit + 4;
-                    end
-                    else begin
-                        roll_back <= `FALSE;
-                    end
-                end
                 if(rob_result == `TRUE  && btb[hash_idx_rob] < 2'b11) btb[hash_idx_rob] <= btb[hash_idx_rob] + 1;
                 else if(rob_result == `FALSE && btb[hash_idx_rob] > 2'b00) btb[hash_idx_rob] <= btb[hash_idx_rob] - 1;
             end
         end
-        else roll_back <= `FALSE;
         end
 
+    end
+
+    
+    always @(*)begin
+        if (btb[hash_idx_pc] == `weaklyTaken || btb[hash_idx_pc] == `stronglyTaken) pc_predict = `TRUE;
+        else pc_predict = `FALSE;
     end
 endmodule

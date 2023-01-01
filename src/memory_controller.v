@@ -76,9 +76,9 @@ module memory_controller
     reg     [31:0]          icache_inst     [`ICACHE_RANGE];
     wire    [31:0]          icache_hit_inst;
     
-    //index pc[7:0]
-    assign  icache_hit = icache_valid[pc[7:0]] && icache_tags[pc[7:0]] == pc[16:0];
-    assign  icache_hit_inst = icache_inst[pc[7:0]];
+    //index pc[6:0]
+    assign  icache_hit = icache_valid[pc[6:0]] && icache_tags[pc[6:0]] == pc[16:0];
+    assign  icache_hit_inst = icache_inst[pc[6:0]];
 
     reg     controller_is_idle;
 
@@ -177,9 +177,9 @@ module memory_controller
                 else if(fetch_finish == `TRUE)begin
                     fetch_finish <= `FALSE;
                     if(!icache_hit)begin
-                        icache_valid [pc[7:0]] <= `TRUE;
-                        icache_inst  [pc[7:0]] <= fetch_instruct;
-                        icache_tags  [pc[7:0]] <= pc[16:0];
+                        icache_valid [pc[6:0]] <= `TRUE;
+                        icache_inst  [pc[6:0]] <= fetch_instruct;
+                        icache_tags  [pc[6:0]] <= pc[16:0];
                     end
                 end
                 else begin

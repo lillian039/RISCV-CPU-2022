@@ -67,8 +67,8 @@ module register
     wire   [`ENTRY_RANGE]  debug_11_reorder = reorder[11];
     wire   [31:0]          debug_11_value   = value[11];
 
-    wire   [`ENTRY_RANGE]  debug_12_reorder = reorder[12];
-    wire   [31:0]          debug_12_value   = value[12];
+    wire   [`ENTRY_RANGE]  debug_15_reorder = reorder[15];
+    wire   [31:0]          debug_15_value   = value[15];
 
     // integer logfile;
     // initial begin
@@ -87,9 +87,15 @@ module register
 
         end
         else if(roll_back == `TRUE)begin
+            // if(rob_commit)begin
+            //   $fdisplay(logfile,"clk: %d reg[9]: %08x reg[13]: %08x reg[15]: %08x",$realtime,value[9],value[13],value[15]);
+            // end
             for(i = 0; i < REG_NUM; i = i + 1)begin
                 busy[i]     <= `FALSE;
                 reorder[i]  <= `ENTRY_NULL;
+                if(reorder[i] == rob_entry )begin
+                    value[i] <= rob_result;
+                end
             end
         end
 
@@ -102,9 +108,9 @@ module register
             busy   [rd_in] <= `TRUE;
         end
 
-        //  if(rob_commit)begin
-        //      $fdisplay(logfile,"clk: %d reorder[8]: %08x reg[8]: %08x reg[14]: %08x reg[15]: %08x ",$realtime,reorder[8],value[8],value[14],value[15]);
-        //  end
+        //   if(rob_commit)begin
+        //       $fdisplay(logfile,"clk: %d reg[9]: %08x reg[13]: %08x reg[15]: %08x",$realtime,value[9],value[13],value[15]);
+        //   end
 
         if (rob_commit && rob_des != `NULL && rob_des != 0 )begin
             // if(rob_result == 32'h000015d0 && rob_des == 8)begin
@@ -116,43 +122,43 @@ module register
                 reorder [rob_des] <= `ENTRY_NULL;
             end
         end
-
-        if(rs_broadcast)begin
-            for (i = 0; i < 32; i = i + 1)begin
-                if(reorder[i] == rs_entry && busy[i])begin
-                    if(!new_issue)begin 
-                        reorder [i] <= `ENTRY_NULL;
-                        busy[i] <= `FALSE;
-                    end
+        end
+        // if(rs_broadcast)begin
+        //     for (i = 0; i < 32; i = i + 1)begin
+        //         if(reorder[i] == rs_entry && busy[i])begin
+        //             if(!new_issue)begin 
+        //                 reorder [i] <= `ENTRY_NULL;
+        //                 busy[i] <= `FALSE;
+        //             end
                     
-                    else if(new_issue && rd_in!=`NULL && rd_in != 0 && rd_in != i)begin
-                        reorder [i] <= `ENTRY_NULL;
-                        busy[i] <= `FALSE;
-                    end
+        //             else if(new_issue && rd_in!=`NULL && rd_in != 0 && rd_in != i)begin
+        //                 reorder [i] <= `ENTRY_NULL;
+        //                 busy[i] <= `FALSE;
+        //             end
             
-                    value[i] <= rs_result;
-                end
-            end
-        end
+        //             value[i] <= rs_result;
+        //         end
+        //     end
+        // end
 
-        if(lsb_broadcast)begin
-            for (i = 0; i < 32; i = i + 1)begin
-                if(reorder[i] == lsb_entry && busy[i])begin
-                    if(!new_issue)begin 
-                        reorder [i] <= `ENTRY_NULL;
-                        busy[i] <= `FALSE;
-                    end
+        // if(lsb_broadcast)begin
+        //     for (i = 0; i < 32; i = i + 1)begin
+        //         if(reorder[i] == lsb_entry && busy[i])begin
+        //             if(!new_issue)begin 
+        //                 reorder [i] <= `ENTRY_NULL;
+        //                 busy[i] <= `FALSE;
+        //             end
 
-                    else if(new_issue && rd_in!=`NULL && rd_in != 0 && rd_in != i)begin
-                        reorder [i] <= `ENTRY_NULL;
-                        busy[i] <= `FALSE;
-                    end
+        //             else if(new_issue && rd_in!=`NULL && rd_in != 0 && rd_in != i)begin
+        //                 reorder [i] <= `ENTRY_NULL;
+        //                 busy[i] <= `FALSE;
+        //             end
 
-                    value[i] <= lsb_result;
-                end
-            end
-        end
-        end
+        //             value[i] <= lsb_result;
+        //         end
+        //     end
+        // end
+        
     end
 
 endmodule

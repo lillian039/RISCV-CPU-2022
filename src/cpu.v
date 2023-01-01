@@ -72,6 +72,7 @@ module cpu(
     //isq
     wire    [31:0]          instruction_isq;
     wire    [31:0]          isq_pc_out;
+    wire                    isq_pc_predict;
 
     //memory controller
     wire                    is_idle;//seems unused?
@@ -174,8 +175,9 @@ module cpu(
 
       .instruction_out      (instruction_isq),
       .isq_pc_out           (isq_pc_out),
+      .isq_pc_predict       (isq_pc_predict),
 
-      .roll_back_out        (roll_back)
+      .roll_back_in         (roll_back)
     );
 
     decoder decoder(
@@ -371,6 +373,7 @@ module cpu(
       .get_instruction      (ins_to_rob),
       .isq_ins_in           (instruction_isq),
       .isq_pc_in            (isq_pc_out),
+      .isq_pc_predict       (isq_pc_predict),
 
       .rd_in                (rd_decoder),
       .op_type_in           (op_type_decoder),

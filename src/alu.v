@@ -29,50 +29,68 @@ module alu(
     `BEQ:   
     begin 
         if(vj == vk)begin
-        alu_result  = 1;
-        alu_pc_out  = pc + imm;
+            alu_result  = 1;
+            alu_pc_out  = pc + imm;
         end
-        else alu_result  = 0;
+        else begin
+            alu_result  = 0;
+            alu_pc_out = pc + 4;
+        end
     end
     `BNE: 
     begin
         if(vj != vk)begin
-        alu_result  = 1;
-        alu_pc_out  = pc + imm;
+            alu_result  = 1;
+            alu_pc_out  = pc + imm;
         end
-        else alu_result  = 0;
+        else begin
+            alu_result  = 0;
+            alu_pc_out = pc + 4;
+        end
     end
     `BLT:
     begin
         if($signed(vj) < $signed(vk))begin
-        alu_result  = 1;
-        alu_pc_out  = pc + imm;
+            alu_result  = 1;
+            alu_pc_out  = pc + imm;
         end
-        else alu_result  = 0;
+        else begin
+            alu_result  = 0;
+            alu_pc_out = pc + 4;
+        end
     end
     `BGE:
     begin
         if($signed(vj) >= $signed(vk))begin
-        alu_result  = 1;
-        alu_pc_out  = pc + imm;
+            alu_result  = 1;
+            alu_pc_out  = pc + imm;
         end
-        else alu_result  = 0;
+        else begin
+            alu_result  = 0;
+            alu_pc_out = pc + 4;
+        end
     end
      `BLTU:
     begin
         if(vj < vk)begin
-        alu_result  = 1;
-        alu_pc_out  = pc + imm;
+            alu_result  = 1;
+            alu_pc_out  = pc + imm;
         end
-        else alu_result  = 0;
+        else begin
+            alu_result  = 0;
+            alu_pc_out = pc + 4;
+        end
     end
     `BGEU:
     begin
         if(vj >= vk)begin
-        alu_result  = 1;
-        alu_pc_out  = pc + imm;
+            alu_result  = 1;
+            alu_pc_out  = pc + imm;
         end
-        else alu_result  = 0;
+        else begin
+            alu_result  = 0;
+            alu_pc_out = pc + 4;
+        end
     end
     `JAL:
     begin

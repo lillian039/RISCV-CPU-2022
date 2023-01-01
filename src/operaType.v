@@ -73,4 +73,4 @@
 `define     ROB_SIZE            6'd32
 
 `define     ADDR_RANGE          31:0 
-`define     ICACHE_RANGE        255:0
+`define     ICACHE_RANGE        127:0
