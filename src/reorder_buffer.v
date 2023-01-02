@@ -53,7 +53,7 @@ module reorder_buffer(
 
 );
     //ROB size
-    parameter ROB_SIZE = 32;
+    parameter ROB_SIZE = 16;
 
     reg   [31:0]    rob_instruction   [ROB_SIZE-1:0];   //存入指令
     reg   [5:0]     rob_entry         [ROB_SIZE-1:0];   //rob 编号
@@ -66,19 +66,18 @@ module reorder_buffer(
     reg   [31:0]    rob_pc_result     [ROB_SIZE-1:0];
     reg             rob_pc_predict    [ROB_SIZE-1:0];
 
-    reg   [4:0]     rob_head;                           //指向rob的头
-    reg   [4:0]     rob_rear;                           //指向rob的尾
+    reg   [3:0]     rob_head;                           //指向rob的头
+    reg   [3:0]     rob_rear;                           //指向rob的尾
 
     reg             is_storing;
     
-    wire    [4:0] full_flag = rob_rear + 1;
+    wire    [3:0] full_flag = rob_rear + 1;
 
     assign rob_is_full = rob_head == full_flag ;
     wire   rob_is_empty = rob_head == rob_rear;
     assign cur_entry = rob_rear;
     
-    assign rob_head_out = rob_head;
-    assign rob_rear_out = rob_rear;
+    assign rob_head_out = {1'b0,rob_head};
 
     wire  [31:0]          debug_rob_head_instruction = rob_instruction[rob_head];
     wire  [`ENTRY_RANGE]  debug_entry_out = rob_entry [rob_head];
@@ -156,7 +155,7 @@ module reorder_buffer(
                 rob_des_commit      <= rob_des[rob_head];
                 rob_pc_result_commit  <= rob_pc_result[rob_head];
 
-               //$fdisplay(logfile,"%08x",rob_pc[rob_head]);
+              // $fdisplay(logfile,"clk: %d %08x",$realtime,rob_pc[rob_head]);
 
                 rob_ready[rob_head] <= `FALSE;
                 rob_entry[rob_head] <= `NULL;
@@ -177,7 +176,7 @@ module reorder_buffer(
 
             //load broadcast
             if(lsb_broadcast)begin
-              for(i = 0; i < 32; i = i + 1)begin
+              for(i = 0; i < ROB_SIZE; i = i + 1)begin
              //   $display("lsb load:",lsb_store_entry);
                   if(rob_entry[i] == lsb_entry) begin
                     rob_ready[i] <= `TRUE;
@@ -188,7 +187,7 @@ module reorder_buffer(
 
             if(lsb_store_addressed)begin
              // $display("lsb store:",lsb_store_entry);
-              for(i = 0; i < 32; i = i + 1)begin
+              for(i = 0; i < ROB_SIZE; i = i + 1)begin
                   if(rob_entry[i] == lsb_store_entry) begin
                     rob_ready[i] <= `TRUE;
                   end
@@ -197,7 +196,7 @@ module reorder_buffer(
 
             if(rs_broadcast)begin
             //  $display("rs:",rs_entry);
-              for(i = 0; i < 32; i = i + 1)begin
+              for(i = 0; i < ROB_SIZE; i = i + 1)begin
                   if(rob_entry[i] == rs_entry) begin
                     rob_ready[i] <= `TRUE;
                     rob_result[i] <= rs_result;

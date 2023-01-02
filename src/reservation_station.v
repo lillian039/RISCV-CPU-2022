@@ -63,7 +63,7 @@ module reservation_station
 
 );
 
-    parameter RS_SIZE = 32;
+    parameter RS_SIZE = 16;
     reg     [3:0]                   state   [RS_SIZE-1:0];
     reg     [31:0]                  Vj      [RS_SIZE-1:0];
     reg     [31:0]                  Vk      [RS_SIZE-1:0];  

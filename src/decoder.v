@@ -48,7 +48,7 @@ module decoder(
                 3'b101: begin 
                     case (func7)
                     7'b0000000: op_out = `SRLI;
-                    7'b0010000: op_out = `SRAI; 
+                    7'b0100000: op_out = `SRAI; 
                     endcase
                 end
                 endcase
