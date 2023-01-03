@@ -178,7 +178,6 @@ module reorder_buffer(
             //load broadcast
             if(lsb_broadcast)begin
               for(i = 0; i < 32; i = i + 1)begin
-             //   $display("lsb load:",lsb_store_entry);
                   if(rob_entry[i] == lsb_entry) begin
                     rob_ready[i] <= `TRUE;
                     rob_result[i] <= lsb_result;
@@ -187,7 +186,6 @@ module reorder_buffer(
             end
 
             if(lsb_store_addressed)begin
-             // $display("lsb store:",lsb_store_entry);
               for(i = 0; i < 32; i = i + 1)begin
                   if(rob_entry[i] == lsb_store_entry) begin
                     rob_ready[i] <= `TRUE;
@@ -196,7 +194,6 @@ module reorder_buffer(
             end
 
             if(rs_broadcast)begin
-            //  $display("rs:",rs_entry);
               for(i = 0; i < 32; i = i + 1)begin
                   if(rob_entry[i] == rs_entry) begin
                     rob_ready[i] <= `TRUE;

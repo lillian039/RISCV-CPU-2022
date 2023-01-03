@@ -1,14 +1,12 @@
 # RISC-V Tomasulo CPU Simulatior 🧐
 
-#### 目录：
+#### Pass simulation！
 
-[TOC]
+OJ今天终于凉快了！快了五倍！！！！
 
-## PART0 大致框架
+### CPU最终架构图：
 
-### CPU初步架构图：
-
-![638ab07256c710c87647b9e7305b3b2.jpg](https://github.com/lillian039/RISCV-CPU-2022/blob/main/README.assets/638ab07256c710c87647b9e7305b3b2.jpg?raw=true)
+![img1](img1.jpg)
 
 ### 所需模块
 
@@ -17,30 +15,60 @@
 - Reservation_station
 - Load_store_buffer
 - Instruction_queue
-- Instruction_cache
-- Data_cache
 - ALU
 - Decoder
 - Branch_Target_Buffer
 
-## PART1 Instruction Fetch
+### Instruction Fetch
 
-### 图示 Instruction Fetch
+##### **（1）Decoder**
 
-<img src="https://github.com/lillian039/RISCV-CPU-2022/blob/main/README.assets/997af3ed740d718f7f89832a35714ad.jpg?raw=true" alt="997af3ed740d718f7f89832a35714ad.jpg" style="zoom:33%;" />
+解析从MemoryController fetch到的指令，主要区分是否为Load Store操作，还是别的操作
 
-### 所需模块：
+##### （2）Instruction Queue
 
-#### （1） Icache
+将fetch 出来的指令暂时存在 Instruction Queue中，并起到区分指令发往 rob  rs lsb 的作用
 
-instruction cache，暂定大小64，由于大小较小，暂定使用 Fully Associated Cache
+##### （3）Branch Target Buffer
 
-#### （2）Instruction Queue
+用于分支预测，pc也存在里面，有一个二位饱和计数器
 
-pc 指针从 cache 或 RAM 中拿到的数据先放在 instruction queue 中，rob直接从 instruction queue 拿指令
+#### Memory Controller
 
-#### （3）Branch Target Buffer
+（1）带一个ICache
 
-用于分支预测 与 ISQ、ROB 和 PC 相连 若 ISQ 拿到的指令与jump有关，就放进 BTB 判
+instruction cache，大小128，由于大小较小，Direct Mapping
 
-跳就更新为 target PC，否则 PC+=4
+（2）执行优先级为 Store > Load > Fetch
+
+#### Reorder Buffer
+
+（1）队列结构，顺序commit
+
+（2）控制rollback
+
+存下predict的结果，如果不一致，就发送rollback指令
+
+（3）一次只commit一条指令，只有commit后才修改寄存器的值以保证正确性
+
+（4）随时监听 rs lsb发来的 broadcast
+
+#### Reservation Station
+
+（1）乱序执行
+
+（2）随时监听alu rob lsb发来的 broadcast
+
+#### Load Store Buffer
+
+（1）队列结构，顺序执行，顺序commit
+
+（2）与 memory controller 交互
+
+（3）随时监听 rs rob lsb发来的 broadcast
+
+#### Register
+
+（1）issue时用rob发来的entry进行重命名
+
+（2）用且仅用 rob commit 的信息更新value或解除rename状态（很重要）

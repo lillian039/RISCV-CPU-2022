@@ -43,14 +43,14 @@ module instruction_queue(
     reg     [4:0]   isq_rear;                   //q_rear 0-31
 
     wire            isq_is_empty = isq_head == isq_rear;
-    wire    [2:0]   op_type_head    = op_type_isq[isq_head];
+    wire    [2:0]   op_type_head = op_type_isq[isq_head];
 
     wire    [4:0]   full_flag = isq_rear + 1;
 
     assign  is_full         = isq_head == full_flag;
-    assign  instruction_out = instruction_isq[isq_head];
-    assign  ins_pc_out      = pc_isq[isq_head];
-    assign  pc_predict_out  = pc_predict[isq_head];
+    assign  instruction_out = instruction_isq   [isq_head];
+    assign  ins_pc_out      = pc_isq            [isq_head];
+    assign  pc_predict_out  = pc_predict        [isq_head];
 
 
     integer i;

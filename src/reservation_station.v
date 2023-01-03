@@ -75,19 +75,6 @@ module reservation_station
     reg     [31:0]                  rs_pc   [RS_SIZE-1:0];
     reg     [5:0]                   op      [RS_SIZE-1:0];
 
-    wire     [31:0]            debug_state_31 = state[31];
-    wire     [`ENTRY_RANGE]    debug_Qj_31 = Qj[31];
-    wire     [`ENTRY_RANGE]    debug_Qk_31 = Qk[31];
-
-    wire     [31:0]            debug_state_30 = state[30];
-    wire     [`ENTRY_RANGE]    debug_Qj_30 = Qj[30];
-    wire     [`ENTRY_RANGE]    debug_Qk_30 = Qk[30];
-
-
-
-
-  //  reg     [RS_SIZE-1:0]           rs_empty; //1 empty 0 full
-  //  reg     [RS_SIZE-1:0]           rs_ready; //1 ready 0 no
 
     reg     [`ENTRY_RANGE]          cur_rs_empty; //5:0
     reg     [`ENTRY_RANGE]          cur_rs_ready;
