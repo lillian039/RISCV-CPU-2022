@@ -88,12 +88,12 @@ module register
         end
         else if(roll_back == `TRUE)begin
             // if(rob_commit)begin
-            //   $fdisplay(logfile,"clk: %d reg[12]: %08x reg[15]: %08x reg[16]: %08x",$realtime,value[12],value[15],value[16]);
+            //   $fdisplay(logfile,"clk: %d reg[9]: %08x reg[13]: %08x reg[15]: %08x",$realtime,value[9],value[13],value[15]);
             // end
             for(i = 0; i < REG_NUM; i = i + 1)begin
                 busy[i]     <= `FALSE;
                 reorder[i]  <= `ENTRY_NULL;
-                if(i == rob_des && rob_des != `ENTRY_NULL && rob_des != 0)begin
+                if(reorder[i] == rob_entry )begin
                     value[i] <= rob_result;
                 end
             end
@@ -108,8 +108,14 @@ module register
             busy   [rd_in] <= `TRUE;
         end
 
-        //if(rob_commit)$fdisplay(logfile,"clk: %d reg[12]: %08x reg[15]: %08x reg[16]: %08x",$realtime,value[12],value[15],value[16]);
+        //   if(rob_commit)begin
+        //       $fdisplay(logfile,"clk: %d reg[9]: %08x reg[13]: %08x reg[15]: %08x",$realtime,value[9],value[13],value[15]);
+        //   end
+
         if (rob_commit && rob_des != `NULL && rob_des != 0 )begin
+            // if(rob_result == 32'h000015d0 && rob_des == 8)begin
+            //     $fdisplay(logfile,"clk:%d rob!! rob_entry:%08x",$realtime,rob_entry);
+            // end
             value[rob_des] <= rob_result;
             if(reorder[rob_des] == rob_entry)begin
                 busy [rob_des] <= `FALSE;
@@ -117,6 +123,41 @@ module register
             end
         end
         end
+        // if(rs_broadcast)begin
+        //     for (i = 0; i < 32; i = i + 1)begin
+        //         if(reorder[i] == rs_entry && busy[i])begin
+        //             if(!new_issue)begin 
+        //                 reorder [i] <= `ENTRY_NULL;
+        //                 busy[i] <= `FALSE;
+        //             end
+                    
+        //             else if(new_issue && rd_in!=`NULL && rd_in != 0 && rd_in != i)begin
+        //                 reorder [i] <= `ENTRY_NULL;
+        //                 busy[i] <= `FALSE;
+        //             end
+            
+        //             value[i] <= rs_result;
+        //         end
+        //     end
+        // end
+
+        // if(lsb_broadcast)begin
+        //     for (i = 0; i < 32; i = i + 1)begin
+        //         if(reorder[i] == lsb_entry && busy[i])begin
+        //             if(!new_issue)begin 
+        //                 reorder [i] <= `ENTRY_NULL;
+        //                 busy[i] <= `FALSE;
+        //             end
+
+        //             else if(new_issue && rd_in!=`NULL && rd_in != 0 && rd_in != i)begin
+        //                 reorder [i] <= `ENTRY_NULL;
+        //                 busy[i] <= `FALSE;
+        //             end
+
+        //             value[i] <= lsb_result;
+        //         end
+        //     end
+        // end
         
     end
 

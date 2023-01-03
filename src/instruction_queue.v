@@ -34,24 +34,23 @@ module instruction_queue(
     output  wire            is_full             // whether instrutcion queue is full
 );
 
-    parameter ISQ_SIZE = 16;
-    reg     [31:0]  instruction_isq     [ISQ_SIZE-1:0]; //size 32
-    reg     [31:0]  pc_isq              [ISQ_SIZE-1:0];
-    reg     [2:0]   op_type_isq         [ISQ_SIZE-1:0];
-    reg             pc_predict          [ISQ_SIZE-1:0];
+    reg     [31:0]  instruction_isq     [31:0]; //size 32
+    reg     [31:0]  pc_isq              [31:0];
+    reg     [2:0]   op_type_isq         [31:0];
+    reg             pc_predict          [31:0];
 
-    reg     [3:0]   isq_head;                   //q_head 0-31
-    reg     [3:0]   isq_rear;                   //q_rear 0-31
+    reg     [4:0]   isq_head;                   //q_head 0-31
+    reg     [4:0]   isq_rear;                   //q_rear 0-31
 
     wire            isq_is_empty = isq_head == isq_rear;
     wire    [2:0]   op_type_head    = op_type_isq[isq_head];
 
-    wire    [3:0]   full_flag = isq_rear + 1;
+    wire    [4:0]   full_flag = isq_rear + 1;
 
     assign  is_full         = isq_head == full_flag;
-    assign  instruction_out = instruction_isq   [isq_head];
-    assign  ins_pc_out      = pc_isq            [isq_head];
-    assign  pc_predict_out  = pc_predict        [isq_head];
+    assign  instruction_out = instruction_isq[isq_head];
+    assign  ins_pc_out      = pc_isq[isq_head];
+    assign  pc_predict_out  = pc_predict[isq_head];
 
 
     integer i;
@@ -65,7 +64,7 @@ module instruction_queue(
             ins_to_rs   <= 0;
             ins_to_rob  <= 0;
 
-            for( i = 0; i < ISQ_SIZE; i = i + 1)begin
+            for( i = 0; i < 32; i = i + 1)begin
                 instruction_isq[i] <= 32'b0;
                 pc_isq[i] <= 32'b0;
                 op_type_isq[i] <= 32'b0;

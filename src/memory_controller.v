@@ -45,7 +45,7 @@ module memory_controller
     output  wire                    is_idle
 );
 
-    parameter CACHE_SIZE = 128;
+    parameter CACHE_SIZE = 256;
 
     reg     [1:0]           store_cnt;
     reg     [2:0]           load_cnt;
@@ -207,20 +207,11 @@ module memory_controller
                 end
 
                 else if(fetch_start == `TRUE)begin
-                    if(icache_hit == `TRUE)begin
-                        fetch_instruct <= icache_hit_inst;
-                        is_fetching    <= `FALSE;
-                        fetch_finish   <= `TRUE;
-                        controller_is_idle <= `TRUE;
-                        instruction_pc_out <= pc;
-                    end
-                    else begin
-                        is_fetching <= `TRUE;
-                        controller_is_idle <= `FALSE;
-                        addr_in <= pc;
-                        fetch_cnt <= 3'b100;//4
-                        instruction_pc_out <= pc;
-                    end
+                    is_fetching <= `TRUE;
+                    controller_is_idle <= `FALSE;
+                    addr_in <= pc;
+                    fetch_cnt <= 3'b100;//4
+                    instruction_pc_out <= pc;
                 end
                 end
 
@@ -327,12 +318,12 @@ module memory_controller
                 fetch_cnt <= fetch_cnt - 1; 
                 addr_in <= addr_in + 1;
             end
-            // else if(is_fetching && icache_hit == `TRUE)begin
-            //     fetch_instruct <= icache_hit_inst;
-            //     is_fetching    <= `FALSE;
-            //     fetch_finish   <= `TRUE;
-            //     controller_is_idle <= `TRUE;
-            // end
+            else if(is_fetching && icache_hit == `TRUE)begin
+                fetch_instruct <= icache_hit_inst;
+                is_fetching    <= `FALSE;
+                fetch_finish   <= `TRUE;
+                controller_is_idle <= `TRUE;
+            end
 
         end
         end
