@@ -184,7 +184,7 @@ module memory_controller
                 end
                 else begin
 
-                if(lsb_store == `TRUE)begin
+                if((lsb_store == `TRUE && (store_address[17:16] != 2'b11 || !io_buffer_full)))begin
                     is_storing  <= `TRUE;
                     store_op    <= op_type_store;
                    // addr_in <= store_address;
