@@ -196,6 +196,10 @@ module memory_controller
                     else if(op_type_store == `SB)   store_cnt <= 2'b00;//0
                 end
 
+                else if(lsb_store == `TRUE && store_address[17:16] == 2'b11 && io_buffer_full)begin
+                    //pause
+                end
+
                 else if(lsb_load == `TRUE)begin
                     is_loading  <= `TRUE;
                     load_op     <= op_type_load;

@@ -1,9 +1,5 @@
 `include "operaType.v"
 module reservation_station
-#(
-    parameter REG_SIZE = 32,
-    parameter ROB_SIZE = 32
-)
 (
     input   wire                    clk_in,// system clock signal
     input   wire                    rst_in,// reset signal
@@ -63,7 +59,7 @@ module reservation_station
 
 );
 
-    parameter RS_SIZE = 32;
+    parameter RS_SIZE = 16;
     reg     [3:0]                   state   [RS_SIZE-1:0];
     reg     [31:0]                  Vj      [RS_SIZE-1:0];
     reg     [31:0]                  Vk      [RS_SIZE-1:0];  
