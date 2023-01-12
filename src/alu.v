@@ -131,7 +131,8 @@ module alu(
         alu_pc_out = imm + pc;
     end
     default:begin
-        $display("!!! clk: %d op: %08x",$realtime,op);
+        alu_result = 0;
+        alu_pc_out = 0;
     end
     endcase
     end
