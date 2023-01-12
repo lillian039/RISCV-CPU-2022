@@ -56,7 +56,7 @@ module branch_target_buffer(
             stop_fetching <= `FALSE;
             sum <= 0;
             wrong <= 0;
-            pc_predict <= 0;
+        //    pc_predict <= 0;
         end
 
         else if(!rdy_in)begin//低信号或没有需要判断的jump  pause
@@ -82,11 +82,9 @@ module branch_target_buffer(
                 sum <= sum + 1;
                 if (btb[hash_idx_pc] == `weaklyTaken || btb[hash_idx_pc] == `stronglyTaken) begin
                     pc <= pc + imm;
-                 //   pc_predict <= `TRUE;
                 end
                 else begin
                     pc <= pc + 4;
-                   // pc_predict <= `FALSE;
                 end
             end
             else begin

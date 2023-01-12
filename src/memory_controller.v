@@ -45,7 +45,7 @@ module memory_controller
     output  wire                    is_idle
 );
 
-    parameter CACHE_SIZE = 256;
+    parameter CACHE_SIZE = 128;
 
     reg     [1:0]           store_cnt;
     reg     [2:0]           load_cnt;

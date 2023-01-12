@@ -140,6 +140,8 @@ module decoder(
             rs1 = `NULL;
             rs2 = `NULL;
             rd = `NULL;
+            op_type = 0;
+            imm_out = 0;
         end
         endcase
 

@@ -80,10 +80,6 @@ module reorder_buffer(
     assign rob_head_out = rob_head;
     assign rob_rear_out = rob_rear;
 
-    wire  [31:0]          debug_rob_head_instruction = rob_instruction[rob_head];
-    wire  [`ENTRY_RANGE]  debug_entry_out = rob_entry [rob_head];
-    wire                  debug_ready_out = rob_ready [rob_head];
-
 
     integer  i;
 
