@@ -24,6 +24,8 @@ module alu(
 
     always @(*) begin
    // $display("alu");
+    alu_pc_out = 0;
+    alu_result = 0;
     case (op)
     //B format
     `BEQ:   

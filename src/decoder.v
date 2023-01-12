@@ -27,6 +27,9 @@ module decoder(
         rd  = {1'b0,op_in [11:7]};
 
         opcode = op_in[6:0];
+        op_out = 0;
+        op_type = 0;
+        imm_out = 0;
 
         case(opcode)
         7'b0010011,7'b1100111: 
@@ -80,9 +83,6 @@ module decoder(
         end
         7'b1100011:
         begin
-            if(op_in == 32'h00b72623)begin
-                $display("???");
-            end
             op_type = `BType;
             imm_out = immB;
             rd = `NULL;
@@ -142,6 +142,7 @@ module decoder(
             rd = `NULL;
             op_type = 0;
             imm_out = 0;
+            op_out = 0;
         end
         endcase
 

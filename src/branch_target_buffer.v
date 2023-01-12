@@ -37,8 +37,6 @@ module branch_target_buffer(
 
     reg         [1:0]   btb  [BTBSIZE-1:0];
 
-    reg         [31:0]  sum;
-    reg         [31:0]  wrong;
     reg         [31:0]  pc;
 
     assign      pc_out = pc;
@@ -54,8 +52,6 @@ module branch_target_buffer(
         end
             pc <= 0;
             stop_fetching <= `FALSE;
-            sum <= 0;
-            wrong <= 0;
         //    pc_predict <= 0;
         end
 
@@ -79,7 +75,6 @@ module branch_target_buffer(
                 stop_fetching <= `TRUE;
             end
             else if(op_type == `BType)begin
-                sum <= sum + 1;
                 if (btb[hash_idx_pc] == `weaklyTaken || btb[hash_idx_pc] == `stronglyTaken) begin
                     pc <= pc + imm;
                 end

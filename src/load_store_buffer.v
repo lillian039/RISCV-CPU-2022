@@ -63,7 +63,7 @@ module load_store_buffer
     
 );
 
-    parameter LSB_SIZE=32;
+    parameter LSB_SIZE=16;
 
     reg     [3:0]               state               [LSB_SIZE-1:0];
     reg     [31:0]              Vj                  [LSB_SIZE-1:0];
@@ -75,25 +75,15 @@ module load_store_buffer
     reg     [6:0]               op                  [LSB_SIZE-1:0];
     reg     [`ENTRY_RANGE]      entry               [LSB_SIZE-1:0];
         
-    reg     [4:0]               lsb_head;
-    reg     [4:0]               lsb_rear;
+    reg     [3:0]               lsb_head;
+    reg     [3:0]               lsb_rear;
 
 
-    wire    [4:0]   full_flag = lsb_rear + 1;
+    wire    [3:0]   full_flag = lsb_rear + 1;
 
     assign          is_full_out     = lsb_head == full_flag;
-    wire    [4:0]   cur_lsb_empty   = lsb_rear;
+    wire    [3:0]   cur_lsb_empty   = lsb_rear;
     wire            is_empty = lsb_head == lsb_rear;
-
-    wire    [`ENTRY_RANGE]   debug_Qj = Qj[lsb_head];
-    wire    [`ENTRY_RANGE]   debug_Qk = Qk[lsb_head];
-    wire    [3:0]   debug_state = state[lsb_head];
-    wire    [31:0]  debug_Vk_head = Vk[lsb_head];
-
-    wire    [31:0]  debug_Vk_1 = Vk[1];
-    wire    [31:0]  debug_Vj_1 = Vj[1];
-
-    wire    [6:0]  debug_lsb_head_instru = op[lsb_head];
 
     integer i;
     // integer logfile;
