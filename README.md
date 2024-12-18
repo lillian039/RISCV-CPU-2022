@@ -1,74 +1,76 @@
-# RISC-V Tomasulo CPU Simulatior 🧐
+# RISC-V Tomasulo CPU Simulator 🧐
 
 #### Pass simulation！
 
-OJ今天终于凉快了！快了五倍！！！！
+The OJ finally sped up today! It’s five times faster!!!! 🎉
 
-### CPU最终架构图：
+Final CPU Architecture:
 
 ![img1](img1.jpg)
 
-### 所需模块
+### Required Modules:
 
-- Register
-- Reorder_Buffer
-- Reservation_station
-- Load_store_buffer
-- Instruction_queue
-- ALU
-- Decoder
-- Branch_Target_Buffer
+	•	Register
+	•	Reorder Buffer
+	•	Reservation Station
+	•	Load Store Buffer
+	•	Instruction Queue
+	•	ALU
+	•	Decoder
+	•	Branch Target Buffer
 
 ### Instruction Fetch
 
-##### **（1）Decoder**
+- **Decoder**
 
-解析从MemoryController fetch到的指令，主要区分是否为Load Store操作，还是别的操作
+  Decodes the instructions fetched from the MemoryController, primarily distinguishing between Load/Store operations and other operations.
 
-##### （2）Instruction Queue
+- **Instruction Queue**
 
-将fetch 出来的指令暂时存在 Instruction Queue中，并起到区分指令发往 rob  rs lsb 的作用
+  Stores fetched instructions temporarily and determines whether they should be sent to the Reorder Buffer, Reservation Station, or Load Store Buffer.
 
-##### （3）Branch Target Buffer
+- **Branch Target Buffer**
 
-用于分支预测，pc也存在里面，有一个二位饱和计数器
+  Used for branch prediction, with the PC stored inside and a two-bit saturating counter for prediction.
 
 #### Memory Controller
 
-（1）带一个ICache
+(1) Includes an ICache:
 
-instruction cache，大小128，由于大小较小，Direct Mapping
+- Instruction cache with a size of 128.
+- Uses Direct Mapping due to its relatively small size.
 
-（2）执行优先级为 Store > Load > Fetch
+(2) Execution Priority:
 
-#### Reorder Buffer
+- Store > Load > Fetch
 
-（1）队列结构，顺序commit
+#### Reorder Buffer (ROB)
 
-（2）控制rollback
+1. Queue structure, commits instructions in order.
 
-存下predict的结果，如果不一致，就发送rollback指令
+2. Controls rollbacks:
 
-（3）一次只commit一条指令，只有commit后才修改寄存器的值以保证正确性
+   Stores predicted results and issues rollback commands if predictions are incorrect.
 
-（4）随时监听 rs lsb发来的 broadcast
+3. Commits only one instruction at a time.
+
+   Registers are updated only after committing to ensure correctness.
+
+4. Continuously listens for broadcasts from Reservation Station and Load Store Buffer.
 
 #### Reservation Station
 
-（1）乱序执行
+1. Supports out-of-order execution.
+2. Continuously listens for broadcasts from the ALU, ROB, and Load Store Buffer.
 
-（2）随时监听alu rob lsb发来的 broadcast
+#### Load Store Buffer (LSB)
 
-#### Load Store Buffer
-
-（1）队列结构，顺序执行，顺序commit
-
-（2）与 memory controller 交互
-
-（3）随时监听 rs rob lsb发来的 broadcast
+1. Queue structure with in-order execution and in-order commit.
+2. Interacts with the Memory Controller.
+3. Continuously listens for broadcasts from Reservation Station and ROB.
 
 #### Register
 
-（1）issue时用rob发来的entry进行重命名
+1. Renames entries during issue using entries sent by the ROB.
+2. Updates values or clears rename states only with information committed by the ROB (this is critical).
 
-（2）用且仅用 rob commit 的信息更新value或解除rename状态（很重要）
